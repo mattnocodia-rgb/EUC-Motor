@@ -1,7 +1,7 @@
 {
-  "name": "Nosfet Aeon - Simulateur sonore V12",
-  "short_name": "Nosfet Aeon",
-  "description": "Simulateur de son moteur V12 pour Nosfet Aeon, pilote par les donnees Bluetooth reelles de la roue.",
+  "name": "EUC Motor - Simulateur de son moteur",
+  "short_name": "EUC Motor",
+  "description": "Simulateur de son moteur pour roue electrique (EUC), pilote par les donnees Bluetooth reelles de la roue.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

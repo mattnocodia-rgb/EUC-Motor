@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Nosfet Aeon — Son V12</title>
+<title>EUC Motor — Son V12</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0d14">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Nosfet Aeon">
+<meta name="apple-mobile-web-app-title" content="EUC Motor">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -566,7 +566,7 @@
 
 <div class="welcome-screen" id="welcomeScreen">
   <div class="welcome-icon">🏎️</div>
-  <h1 class="welcome-title">NOSFET AEON</h1>
+  <h1 class="welcome-title">EUC MOTOR</h1>
   <p class="welcome-tagline">Simulateur de son moteur V12, pilote en direct par les donnees Bluetooth de ta roue electrique.</p>
   <button class="btn-primary welcome-btn" id="btnWelcomeInstall">📲 Installer l'application</button>
   <button class="btn-secondary welcome-btn" id="btnWelcomeContinue">Continuer sans installer</button>
@@ -579,7 +579,7 @@
     <div class="brand">
       <div class="brand-icon">🏎️</div>
       <div class="brand-text">
-        <div class="title">NOSFET AEON</div>
+        <div class="title">EUC MOTOR</div>
         <div class="subtitle">SIMULATEUR SONORE V12</div>
       </div>
     </div>
@@ -720,12 +720,23 @@
 
       <div class="card">
         <p class="card-title">Sensibilite</p>
-        <input type="range" id="threshold" min="20" max="1000" step="10" value="150">
+        <p class="hint" style="margin-bottom:12px;">Tu peux regler separement l'acceleration et le freinage : c'est utile car beaucoup de gens freinent plus doucement qu'ils n'accelerent, et voudront donc un seuil de freinage plus bas.</p>
+
+        <p class="sound-setting-title" style="margin-bottom:6px;">Seuil d'acceleration positive (accelerer)</p>
+        <input type="range" id="thresholdAccel" min="20" max="1000" step="10" value="150">
         <div class="row">
           <span>Seuil actuel</span>
-          <span class="mono" id="thresholdVal">150</span>
+          <span class="mono" id="thresholdAccelVal">150</span>
         </div>
-        <p class="hint">Determine a quel point la roue doit accelerer ou freiner avant que le son change. Un chiffre bas rend l'app tres reactive mais peut se declencher pour de petits mouvements ; un chiffre haut demande une action plus franche. Ce reglage est sauvegarde automatiquement.</p>
+
+        <p class="sound-setting-title" style="margin:14px 0 6px;">Seuil d'acceleration negative (freiner)</p>
+        <input type="range" id="thresholdBrake" min="20" max="1000" step="10" value="150">
+        <div class="row">
+          <span>Seuil actuel</span>
+          <span class="mono" id="thresholdBrakeVal">150</span>
+        </div>
+
+        <p class="hint">Un chiffre bas rend l'app tres reactive mais peut se declencher pour de petits mouvements ; un chiffre haut demande une action plus franche. Ces reglages sont sauvegardes automatiquement.</p>
       </div>
 
       <div class="card">
@@ -766,15 +777,23 @@
 
       <div class="card">
         <p class="card-title">Realisme sonore</p>
-        <p class="hint" style="margin-bottom:14px;">Fait varier le son d'acceleration et de freinage en fonction de l'intensite reelle du mouvement, en direct pendant que tu roules.</p>
-        <label class="checkbox-row"><input type="checkbox" id="modVolume"> Moduler le volume (plus fort si l'action est franche)</label>
-        <label class="checkbox-row"><input type="checkbox" id="modPitch"> Moduler aussi la hauteur du son (effet plus marque, a tester)</label>
+        <p class="hint" style="margin-bottom:10px;"><strong>Sans ce reglage :</strong> le son d'acceleration ou de freinage sort toujours pareil, que tu donnes un petit coup ou un gros coup — comme un bouton "marche/arret".</p>
+        <p class="hint" style="margin-bottom:14px;"><strong>Avec ce reglage :</strong> le son s'adapte a la force reelle de ton geste, en direct — plus tu appuies fort, plus il est fort (et si tu actives la 2e case, plus il devient aigu aussi, comme un moteur qui monte en regime).</p>
+        <label class="checkbox-row"><input type="checkbox" id="modVolume"> Le volume s'adapte a la force du geste (recommande)</label>
+        <label class="checkbox-row"><input type="checkbox" id="modPitch"> Le son devient aussi plus aigu si le geste est franc (effet plus marque, a tester)</label>
         <div class="row" style="margin-top:8px;">
-          <span>En direct</span>
+          <span>Demonstration en direct</span>
           <span class="mono" id="modLiveReadout">-</span>
         </div>
-        <p class="hint">Cette ligne affiche la modulation appliquee en temps reel pendant qu'un son d'acceleration ou de freinage joue — utile pour verifier que le reglage a bien un effet.</p>
+        <p class="hint">Cette ligne s'affiche uniquement pendant qu'un son d'acceleration ou de freinage joue : elle montre les valeurs appliquees a l'instant T, pour verifier concretement que le reglage fonctionne.</p>
         <p class="hint">Ces reglages sont sauvegardes automatiquement.</p>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Silence en mouvement (Neutre)</p>
+        <p class="hint" style="margin-bottom:10px;">Si cette case est cochee, le son Neutre ne sera pas joue lorsque la roue est en mouvement (variation detectee), mais seulement a l'arret (aucune variation).</p>
+        <label class="checkbox-row"><input type="checkbox" id="idleMuteEnabled"> Couper le son Neutre en mouvement (le jouer uniquement a l'arret)</label>
+        <p class="hint">Ce reglage est sauvegarde automatiquement.</p>
       </div>
 
       <div class="card">
@@ -967,7 +986,8 @@ const SERVICE_UUID = 0xFFE0;
 const CHAR_UUID    = 0xFFE1;
 
 let device, server, characteristic;
-let threshold = 150;
+let thresholdAccel = 150;
+let thresholdBrake = 150;
 let lastValue = null;
 let smoothedDelta = 0;
 const SMOOTHING_ALPHA = 0.3;
@@ -998,10 +1018,16 @@ document.getElementById("btnCopyLog").addEventListener("click", async () => {
   }
 });
 
-document.getElementById("threshold").addEventListener("input", (e) => {
-  threshold = parseFloat(e.target.value);
-  document.getElementById("thresholdVal").textContent = threshold.toFixed(0);
-  saveThreshold(threshold);
+document.getElementById("thresholdAccel").addEventListener("input", (e) => {
+  thresholdAccel = parseFloat(e.target.value);
+  document.getElementById("thresholdAccelVal").textContent = thresholdAccel.toFixed(0);
+  saveThresholds();
+});
+
+document.getElementById("thresholdBrake").addEventListener("input", (e) => {
+  thresholdBrake = parseFloat(e.target.value);
+  document.getElementById("thresholdBrakeVal").textContent = thresholdBrake.toFixed(0);
+  saveThresholds();
 });
 
 document.getElementById("crossfade").addEventListener("input", (e) => {
@@ -1085,19 +1111,28 @@ async function restoreSavedSounds() {
   }
 }
 
-function saveThreshold(value) {
-  try { localStorage.setItem("nosfet_aeon_threshold", String(value)); } catch (e) {}
+function saveThresholds() {
+  try {
+    localStorage.setItem("nosfet_aeon_threshold_accel", String(thresholdAccel));
+    localStorage.setItem("nosfet_aeon_threshold_brake", String(thresholdBrake));
+  } catch (e) {}
 }
 
-function restoreThreshold() {
+function restoreThresholds() {
   try {
-    const saved = localStorage.getItem("nosfet_aeon_threshold");
-    if (saved !== null) {
-      threshold = parseFloat(saved);
-      document.getElementById("threshold").value = threshold;
-      document.getElementById("thresholdVal").textContent = threshold.toFixed(0);
-    }
+    const savedAccel = localStorage.getItem("nosfet_aeon_threshold_accel");
+    const savedBrake = localStorage.getItem("nosfet_aeon_threshold_brake");
+    // Compatibilite avec l'ancien reglage unique "threshold" (avant la separation)
+    const legacy = localStorage.getItem("nosfet_aeon_threshold");
+    if (savedAccel !== null) thresholdAccel = parseFloat(savedAccel);
+    else if (legacy !== null) thresholdAccel = parseFloat(legacy);
+    if (savedBrake !== null) thresholdBrake = parseFloat(savedBrake);
+    else if (legacy !== null) thresholdBrake = parseFloat(legacy);
   } catch (e) {}
+  document.getElementById("thresholdAccel").value = thresholdAccel;
+  document.getElementById("thresholdAccelVal").textContent = thresholdAccel.toFixed(0);
+  document.getElementById("thresholdBrake").value = thresholdBrake;
+  document.getElementById("thresholdBrakeVal").textContent = thresholdBrake.toFixed(0);
 }
 
 // ---------------- Comportement des sons evenementiels (configurable) ----------------
@@ -1328,9 +1363,64 @@ function triggerEventSound(key) {
   }
 }
 
+// ---------------- Silence du Neutre en mouvement (basee sur la variation) ----------------
+let lastDelta = 0;
+// En dessous de cette variation, on considere qu'il n'y a "pas de mouvement"
+// (meme petit bruit d'equilibrage naturel toujours present a l'arret).
+const IDLE_MOVEMENT_EPSILON = 15;
+const idleMuteSettings = { enabled: false };
+
+function saveIdleMuteSettings() {
+  try { localStorage.setItem("nosfet_aeon_idle_mute", JSON.stringify(idleMuteSettings)); } catch (e) {}
+}
+
+function restoreIdleMuteSettings() {
+  try {
+    const saved = localStorage.getItem("nosfet_aeon_idle_mute");
+    if (saved) Object.assign(idleMuteSettings, JSON.parse(saved));
+  } catch (e) {}
+  document.getElementById("idleMuteEnabled").checked = idleMuteSettings.enabled;
+}
+
+document.getElementById("idleMuteEnabled").addEventListener("change", (e) => {
+  idleMuteSettings.enabled = e.target.checked;
+  saveIdleMuteSettings();
+});
+
+// Coupe le son en cours en douceur (fondu si configure), sans en demarrer un
+// nouveau a la place : utilise pour rendre le Neutre silencieux en mouvement.
+function silenceCurrentSound() {
+  if (!currentSource) {
+    currentPlaying = null;
+    return;
+  }
+  const fadeSec = crossfadeMs / 1000;
+  const now = audioCtx.currentTime;
+  const oldSource = currentSource;
+  const oldGain = currentGainNode;
+
+  if (fadeSec > 0 && oldGain) {
+    oldGain.gain.cancelScheduledValues(now);
+    oldGain.gain.setValueAtTime(oldGain.gain.value, now);
+    oldGain.gain.linearRampToValueAtTime(0, now + fadeSec);
+    setTimeout(() => { try { oldSource.stop(); } catch (e) {} }, fadeSec * 1000 + 30);
+  } else {
+    try { oldSource.stop(); } catch (e) {}
+  }
+
+  currentSource = null;
+  currentGainNode = null;
+  currentPlaying = null;
+}
+
 function applyState(state) {
   if (state === "idle") {
-    playLoop("idle");
+    const shouldBeSilent = idleMuteSettings.enabled && Math.abs(lastDelta) > IDLE_MOVEMENT_EPSILON;
+    if (shouldBeSilent) {
+      if (currentPlaying !== null) silenceCurrentSound();
+    } else {
+      playLoop("idle");
+    }
   } else if (state === "parking") {
     playLoop("parking");
   } else {
@@ -1402,7 +1492,7 @@ document.getElementById("btnExportLog").addEventListener("click", () => {
   const header =
     `Export du journal technique\n` +
     `Appareil connecte : ${device ? device.name : "(non connecte)"}\n` +
-    `Seuil de sensibilite au moment de l'export : ${threshold}\n` +
+    `Seuil acceleration / freinage au moment de l'export : ${thresholdAccel} / ${thresholdBrake}\n` +
     `Date d'export : ${now.toLocaleString()}\n` +
     `${"=".repeat(50)}\n\n`;
 
@@ -1426,8 +1516,8 @@ function updateGauge(delta) {
   const pct = (Math.abs(clamped) / GAUGE_MAX) * 50; // moitie de la jauge de chaque cote du centre
 
   let color = "var(--idle)";
-  if (delta > threshold) color = "var(--accel)";
-  else if (delta < -threshold) color = "var(--brake)";
+  if (delta > thresholdAccel) color = "var(--accel)";
+  else if (delta < -thresholdBrake) color = "var(--brake)";
 
   if (clamped >= 0) {
     fillEl.style.left = "50%";
@@ -1479,12 +1569,14 @@ function updateRealtimeModulation(delta) {
     return;
   }
 
-  // Intensite calculee relativement au seuil configure (pas sur une echelle
-  // fixe) : 0 juste au-dessus du seuil, 1 des que la variation atteint 4x le
-  // seuil. Ainsi la modulation reste sensible quel que soit le reglage de
-  // sensibilite choisi.
-  const range = Math.max(threshold * 3, 50);
-  const intensity = Math.max(0, Math.min(1, (Math.abs(delta) - threshold) / range));
+  // Intensite calculee relativement au seuil configure pour l'action en cours
+  // (pas sur une echelle fixe) : 0 juste au-dessus du seuil, 1 des que la
+  // variation atteint 4x le seuil. Ainsi la modulation reste sensible quel
+  // que soit le reglage de sensibilite choisi, separement pour l'acceleration
+  // et le freinage.
+  const relevantThreshold = currentPlaying === "accel" ? thresholdAccel : thresholdBrake;
+  const range = Math.max(relevantThreshold * 3, 50);
+  const intensity = Math.max(0, Math.min(1, (Math.abs(delta) - relevantThreshold) / range));
 
   let gainPct = 100;
   let pitchPct = 100;
@@ -1513,6 +1605,7 @@ function updateSoundState(value, delta) {
   document.getElementById("rawDelta").textContent = delta.toFixed(0);
   updateGauge(delta);
   updateRealtimeModulation(delta);
+  lastDelta = delta;
 
   if (value === 0) {
     zeroStreak++;
@@ -1523,11 +1616,11 @@ function updateSoundState(value, delta) {
   const stateEl = document.getElementById("soundState");
   let newState;
 
-  if (delta > threshold) {
+  if (delta > thresholdAccel) {
     newState = "accel";
     stateEl.textContent = "ACCELERATION";
     stateEl.className = "status-pill st-accel";
-  } else if (delta < -threshold) {
+  } else if (delta < -thresholdBrake) {
     newState = "brake";
     stateEl.textContent = "FREINAGE";
     stateEl.className = "status-pill st-brake";
@@ -1657,8 +1750,9 @@ document.getElementById("btnConnect").addEventListener("click", async () => {
 });
 
 // ---------------- Initialisation : restaurer les reglages sauvegardes ----------------
-restoreThreshold();
+restoreThresholds();
 restoreCrossfade();
+restoreIdleMuteSettings();
 restoreSoundSettings();
 restoreModulationSettings();
 restoreSavedSounds();
