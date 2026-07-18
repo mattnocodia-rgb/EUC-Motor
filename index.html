@@ -103,6 +103,30 @@
     box-shadow: 0 0 10px 2px rgba(51,224,138,0.6);
   }
 
+  /* ---------- Bandeau d'installation PWA ---------- */
+  .install-banner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 16px 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0,229,255,0.16), rgba(0,229,255,0.05));
+    border: 1px solid rgba(0,229,255,0.35);
+    font-size: 12.5px;
+    color: var(--text);
+  }
+  .install-banner.show { display: flex; }
+  .install-banner button {
+    width: auto;
+    flex-shrink: 0;
+    padding: 8px 14px;
+    font-size: 13px;
+    background: var(--accent-cyan);
+    color: #001318;
+  }
+
   /* ---------- Layout ---------- */
   main { flex: 1; padding: 4px 16px 24px; }
   .panel { display: none; animation: fadeIn 0.25s ease; }
@@ -491,6 +515,11 @@
     </div>
     <div class="conn-dot" id="connDot"></div>
   </header>
+
+  <div class="install-banner" id="installBanner">
+    <span>📲 Installe cette application pour une utilisation en plein ecran</span>
+    <button id="btnInstallApp">Installer</button>
+  </div>
 
   <main>
 
@@ -1452,6 +1481,29 @@ restoreThreshold();
 restoreSoundSettings();
 restoreModulationSettings();
 restoreSavedSounds();
+
+// ---------------- Bandeau d'installation PWA ----------------
+let deferredInstallPrompt = null;
+const installBanner = document.getElementById("installBanner");
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  installBanner.classList.add("show");
+});
+
+document.getElementById("btnInstallApp").addEventListener("click", async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installBanner.classList.remove("show");
+});
+
+window.addEventListener("appinstalled", () => {
+  installBanner.classList.remove("show");
+  log("Application installee sur l'ecran d'accueil");
+});
 
 // ---------------- Enregistrement du service worker (mode PWA / hors-ligne) ----------------
 if ("serviceWorker" in navigator) {
