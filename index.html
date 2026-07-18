@@ -74,9 +74,7 @@
   .brand-icon {
     width: 34px; height: 34px;
     border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent-cyan), #0a5b8f);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
+    object-fit: cover;
     box-shadow: 0 0 18px -4px rgba(0,229,255,0.6);
   }
   .brand-text .title {
@@ -118,7 +116,10 @@
   }
   .welcome-screen.hidden { display: none; }
   .welcome-icon {
-    font-size: 54px;
+    width: 96px;
+    height: 96px;
+    border-radius: 22px;
+    object-fit: cover;
     margin-bottom: 16px;
     filter: drop-shadow(0 0 20px rgba(0,229,255,0.35));
   }
@@ -565,7 +566,7 @@
 <body>
 
 <div class="welcome-screen" id="welcomeScreen">
-  <div class="welcome-icon">🏎️</div>
+  <img class="welcome-icon" src="icon-192.png" alt="EUC Motor">
   <h1 class="welcome-title">EUC MOTOR</h1>
   <p class="welcome-tagline">Simulateur de son moteur V12, pilote en direct par les donnees Bluetooth de ta roue electrique.</p>
   <button class="btn-primary welcome-btn" id="btnWelcomeInstall">📲 Installer l'application</button>
@@ -577,7 +578,7 @@
 
   <header>
     <div class="brand">
-      <div class="brand-icon">🏎️</div>
+      <img class="brand-icon" src="icon-192.png" alt="EUC Motor">
       <div class="brand-text">
         <div class="title">EUC MOTOR</div>
         <div class="subtitle">SIMULATEUR SONORE !!</div>
@@ -1571,18 +1572,20 @@ function updateRealtimeModulation(delta) {
 
   // Intensite calculee relativement au seuil configure pour l'action en cours
   // (pas sur une echelle fixe) : 0 juste au-dessus du seuil, 1 des que la
-  // variation atteint 4x le seuil. Ainsi la modulation reste sensible quel
-  // que soit le reglage de sensibilite choisi, separement pour l'acceleration
-  // et le freinage.
+  // variation atteint 1.5x le seuil. Plage volontairement resserree pour que
+  // l'intensite maximale soit atteignable en usage reel (et pas seulement en
+  // theorie), separement pour l'acceleration et le freinage.
   const relevantThreshold = currentPlaying === "accel" ? thresholdAccel : thresholdBrake;
-  const range = Math.max(relevantThreshold * 3, 50);
+  const range = Math.max(relevantThreshold * 1.5, 40);
   const intensity = Math.max(0, Math.min(1, (Math.abs(delta) - relevantThreshold) / range));
 
   let gainPct = 100;
   let pitchPct = 100;
 
   if (modulationSettings.volume) {
-    const gain = 0.5 + 0.5 * intensity;
+    // Plage elargie (30% a 100%) pour une difference clairement audible,
+    // au lieu d'un ecart trop subtil entre les deux bouts de la plage.
+    const gain = 0.3 + 0.7 * intensity;
     currentGainNode.gain.value = gain;
     gainPct = Math.round(gain * 100);
   } else {
@@ -1590,7 +1593,7 @@ function updateRealtimeModulation(delta) {
   }
 
   if (modulationSettings.pitch) {
-    const rate = 0.9 + 0.25 * intensity;
+    const rate = 0.85 + 0.3 * intensity;
     currentSource.playbackRate.value = rate;
     pitchPct = Math.round(rate * 100);
   } else {
