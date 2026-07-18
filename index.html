@@ -1625,7 +1625,10 @@ let previousState = "idle"; // pour detecter la transition parking -> neutre
 // dont la frequence et le volume evoluent en direct avec l'intensite reelle
 // de l'acceleration ou du freinage (delta brut, non lisse).
 const synthToneSettings = { enabled: false };
-let synthOscillator = null;
+let synthOscMain = null;
+let synthOscDetune = null;
+let synthOscSub = null;
+let synthFilter = null;
 let synthGainNode = null;
 
 function saveSynthToneSettings() {
@@ -1647,38 +1650,72 @@ document.getElementById("synthToneEnabled").addEventListener("change", (e) => {
 });
 
 function ensureSynthStarted() {
-  if (synthOscillator) return;
-  synthOscillator = audioCtx.createOscillator();
-  synthOscillator.type = "sawtooth";
-  synthOscillator.frequency.value = 140;
+  if (synthOscMain) return;
+
+  // Filtre passe-bas : adoucit les harmoniques agressives des dents de scie.
+  // Sa frequence de coupure s'ouvre avec l'intensite (comme un filtre de
+  // synthetiseur classique), ce qui donne une sensation de "montee" sans
+  // devenir strident.
+  synthFilter = audioCtx.createBiquadFilter();
+  synthFilter.type = "lowpass";
+  synthFilter.frequency.value = 400;
+  synthFilter.Q.value = 0.7;
+
   synthGainNode = audioCtx.createGain();
   synthGainNode.gain.value = 0;
-  synthOscillator.connect(synthGainNode);
+
+  // Oscillateur principal + un second legerement desaccorde (quelques cents)
+  // pour un effet de "battements" plus riche et moins pur/electronique
+  // qu'un seul oscillateur nu. Un troisieme, une octave plus bas, apporte
+  // du corps/grave pour eviter que ca sonne fluet ou criard.
+  synthOscMain = audioCtx.createOscillator();
+  synthOscMain.type = "sawtooth";
+  synthOscMain.frequency.value = 130;
+
+  synthOscDetune = audioCtx.createOscillator();
+  synthOscDetune.type = "sawtooth";
+  synthOscDetune.detune.value = 9;
+  synthOscDetune.frequency.value = 130;
+
+  synthOscSub = audioCtx.createOscillator();
+  synthOscSub.type = "triangle";
+  synthOscSub.frequency.value = 65;
+
+  synthOscMain.connect(synthFilter);
+  synthOscDetune.connect(synthFilter);
+  synthOscSub.connect(synthFilter);
+  synthFilter.connect(synthGainNode);
   synthGainNode.connect(masterGain);
-  synthOscillator.start();
+
+  synthOscMain.start();
+  synthOscDetune.start();
+  synthOscSub.start();
 }
 
 function stopSynthTone() {
-  if (!synthOscillator) return;
+  if (!synthOscMain) return;
   const now = audioCtx.currentTime;
-  const osc = synthOscillator;
+  const oscs = [synthOscMain, synthOscDetune, synthOscSub];
   const gain = synthGainNode;
   gain.gain.cancelScheduledValues(now);
   gain.gain.setValueAtTime(gain.gain.value, now);
-  gain.gain.linearRampToValueAtTime(0, now + 0.12);
-  setTimeout(() => { try { osc.stop(); } catch (e) {} }, 160);
-  synthOscillator = null;
+  gain.gain.linearRampToValueAtTime(0, now + 0.15);
+  setTimeout(() => { oscs.forEach((o) => { try { o.stop(); } catch (e) {} }); }, 200);
+  synthOscMain = null;
+  synthOscDetune = null;
+  synthOscSub = null;
+  synthFilter = null;
   synthGainNode = null;
 }
 
 function updateSynthTone(state, rawDelta) {
   if (!synthToneSettings.enabled) {
-    if (synthOscillator) stopSynthTone();
+    if (synthOscMain) stopSynthTone();
     return;
   }
 
   if (state !== "accel" && state !== "brake") {
-    if (synthOscillator) stopSynthTone();
+    if (synthOscMain) stopSynthTone();
     return;
   }
 
@@ -1688,16 +1725,24 @@ function updateSynthTone(state, rawDelta) {
 
   ensureSynthStarted();
   const now = audioCtx.currentTime;
+  const smoothing = 0.08; // transitions plus douces qu'avant (moins de "zigzag")
 
   // Acceleration : tonalite qui monte (comme une turbine qui accelere).
   // Freinage : tonalite qui part plus haut et redescend (effet de decelaration).
-  const baseFreq = state === "accel" ? 130 : 260;
-  const freqSwing = state === "accel" ? 480 : -160;
+  const baseFreq = state === "accel" ? 110 : 190;
+  const freqSwing = state === "accel" ? 260 : -110;
   const targetFreq = baseFreq + freqSwing * intensity;
-  synthOscillator.frequency.setTargetAtTime(targetFreq, now, 0.05);
+  synthOscMain.frequency.setTargetAtTime(targetFreq, now, smoothing);
+  synthOscDetune.frequency.setTargetAtTime(targetFreq, now, smoothing);
+  synthOscSub.frequency.setTargetAtTime(targetFreq / 2, now, smoothing);
 
-  const targetGain = 0.1 + 0.25 * intensity;
-  synthGainNode.gain.setTargetAtTime(targetGain, now, 0.05);
+  // Le filtre s'ouvre avec l'intensite : son plus feutre au repos, plus
+  // present (mais jamais brut) quand l'effort est franc.
+  const targetCutoff = 300 + 1400 * intensity;
+  synthFilter.frequency.setTargetAtTime(targetCutoff, now, smoothing);
+
+  const targetGain = 0.08 + 0.18 * intensity;
+  synthGainNode.gain.setTargetAtTime(targetGain, now, smoothing);
 }
 
 function updateSoundState(value, delta, rawDeltaForModulation) {
