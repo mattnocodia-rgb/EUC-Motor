@@ -389,6 +389,30 @@
   }
   .file-status.loaded { color: var(--accel); }
 
+  .vol-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .vol-label {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+    width: 44px;
+  }
+  .vol-row input[type="range"] {
+    flex: 1;
+    margin: 0;
+  }
+  .vol-val {
+    font-size: 11.5px;
+    color: var(--text-dim);
+    width: 38px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
   /* ---------- Slider ---------- */
   input[type="range"] {
     width: 100%;
@@ -658,6 +682,11 @@
             <button class="remove-x-btn" id="clearParking" title="Retirer">×</button>
           </div>
           <div class="file-status" id="statusParking">Aucun fichier choisi</div>
+          <div class="vol-row">
+            <span class="vol-label">Volume</span>
+            <input type="range" id="volParking" min="0" max="150" step="5" value="100">
+            <span class="mono vol-val" id="volParkingVal">100%</span>
+          </div>
         </div>
 
         <div class="sound-row">
@@ -669,6 +698,11 @@
             <button class="remove-x-btn" id="clearStartup" title="Retirer">×</button>
           </div>
           <div class="file-status" id="statusStartup">Aucun fichier choisi</div>
+          <div class="vol-row">
+            <span class="vol-label">Volume</span>
+            <input type="range" id="volStartup" min="0" max="150" step="5" value="100">
+            <span class="mono vol-val" id="volStartupVal">100%</span>
+          </div>
         </div>
 
         <div class="sound-row">
@@ -680,6 +714,11 @@
             <button class="remove-x-btn" id="clearIdle" title="Retirer">×</button>
           </div>
           <div class="file-status" id="statusIdle">Aucun fichier choisi</div>
+          <div class="vol-row">
+            <span class="vol-label">Volume</span>
+            <input type="range" id="volIdle" min="0" max="150" step="5" value="100">
+            <span class="mono vol-val" id="volIdleVal">100%</span>
+          </div>
         </div>
 
         <div class="sound-row">
@@ -691,6 +730,11 @@
             <button class="remove-x-btn" id="clearAccel" title="Retirer">×</button>
           </div>
           <div class="file-status" id="statusAccel">Aucun fichier choisi</div>
+          <div class="vol-row">
+            <span class="vol-label">Volume</span>
+            <input type="range" id="volAccel" min="0" max="150" step="5" value="100">
+            <span class="mono vol-val" id="volAccelVal">100%</span>
+          </div>
         </div>
 
         <div class="sound-row">
@@ -702,6 +746,11 @@
             <button class="remove-x-btn" id="clearBrake" title="Retirer">×</button>
           </div>
           <div class="file-status" id="statusBrake">Aucun fichier choisi</div>
+          <div class="vol-row">
+            <span class="vol-label">Volume</span>
+            <input type="range" id="volBrake" min="0" max="150" step="5" value="100">
+            <span class="mono vol-val" id="volBrakeVal">100%</span>
+          </div>
         </div>
       </div>
 
@@ -1267,15 +1316,57 @@ function restoreCrossfade() {
 // a une) : la nouvelle monte progressivement en volume pendant que l'ancienne
 // redescend, puis s'arrete. Avec un fondu regle sur 0, le comportement revient
 // a un enchainement net (immediat).
-function crossfadeIn(newSource, newGainNode) {
+// ---------------- Volume individuel par son (defaut 100%) ----------------
+const soundVolumes = { idle: 1, accel: 1, brake: 1, parking: 1, startup: 1 };
+const volumeSliderIds = { idle: "volIdle", accel: "volAccel", brake: "volBrake", parking: "volParking", startup: "volStartup" };
+const volumeValueIds = { idle: "volIdleVal", accel: "volAccelVal", brake: "volBrakeVal", parking: "volParkingVal", startup: "volStartupVal" };
+
+function saveSoundVolumes() {
+  try { localStorage.setItem("nosfet_aeon_sound_volumes", JSON.stringify(soundVolumes)); } catch (e) {}
+}
+
+function restoreSoundVolumes() {
+  try {
+    const saved = localStorage.getItem("nosfet_aeon_sound_volumes");
+    if (saved) Object.assign(soundVolumes, JSON.parse(saved));
+  } catch (e) {}
+  Object.keys(soundVolumes).forEach((key) => {
+    const pct = Math.round(soundVolumes[key] * 100);
+    const slider = document.getElementById(volumeSliderIds[key]);
+    const label = document.getElementById(volumeValueIds[key]);
+    if (slider) slider.value = pct;
+    if (label) label.textContent = pct + "%";
+  });
+}
+
+function setupVolumeControl(key) {
+  const slider = document.getElementById(volumeSliderIds[key]);
+  const label = document.getElementById(volumeValueIds[key]);
+  slider.addEventListener("input", (e) => {
+    const pct = parseFloat(e.target.value);
+    soundVolumes[key] = pct / 100;
+    label.textContent = pct + "%";
+    saveSoundVolumes();
+    // Si ce son est actuellement audible, on applique le changement tout de
+    // suite (sauf pour accel/frein en cours de modulation, qui se recalent
+    // automatiquement au prochain paquet Bluetooth).
+    if (currentPlaying === key && currentGainNode && currentPlaying !== "accel" && currentPlaying !== "brake") {
+      currentGainNode.gain.value = soundVolumes[key];
+    }
+  });
+}
+["idle", "accel", "brake", "parking", "startup"].forEach(setupVolumeControl);
+
+function crossfadeIn(newSource, newGainNode, key) {
   const now = audioCtx.currentTime;
   const fadeSec = crossfadeMs / 1000;
+  const targetVolume = soundVolumes[key] !== undefined ? soundVolumes[key] : 1;
 
   if (fadeSec > 0) {
     newGainNode.gain.setValueAtTime(0, now);
-    newGainNode.gain.linearRampToValueAtTime(1, now + fadeSec);
+    newGainNode.gain.linearRampToValueAtTime(targetVolume, now + fadeSec);
   } else {
-    newGainNode.gain.setValueAtTime(1, now);
+    newGainNode.gain.setValueAtTime(targetVolume, now);
   }
 
   if (currentSource && currentGainNode) {
@@ -1313,7 +1404,7 @@ function playLoop(key) {
   source.connect(gainNode);
   gainNode.connect(masterGain);
   source.start(0);
-  crossfadeIn(source, gainNode);
+  crossfadeIn(source, gainNode, key);
 
   currentSource = source;
   currentGainNode = gainNode;
@@ -1346,7 +1437,7 @@ function playOnceThenReevaluate(key) {
     }
   };
   source.start(0);
-  crossfadeIn(source, gainNode);
+  crossfadeIn(source, gainNode, key);
 
   currentSource = source;
   currentGainNode = gainNode;
@@ -1579,17 +1670,19 @@ function updateRealtimeModulation(delta) {
   const range = Math.max(relevantThreshold * 1.5, 40);
   const intensity = Math.max(0, Math.min(1, (Math.abs(delta) - relevantThreshold) / range));
 
+  const baseVolume = soundVolumes[currentPlaying] !== undefined ? soundVolumes[currentPlaying] : 1;
   let gainPct = 100;
   let pitchPct = 100;
 
   if (modulationSettings.volume) {
     // Plage elargie (30% a 100%) pour une difference clairement audible,
     // au lieu d'un ecart trop subtil entre les deux bouts de la plage.
-    const gain = 0.3 + 0.7 * intensity;
+    const gain = (0.3 + 0.7 * intensity) * baseVolume;
     currentGainNode.gain.value = gain;
     gainPct = Math.round(gain * 100);
   } else {
-    currentGainNode.gain.value = 1;
+    currentGainNode.gain.value = baseVolume;
+    gainPct = Math.round(baseVolume * 100);
   }
 
   if (modulationSettings.pitch) {
@@ -1603,11 +1696,14 @@ function updateRealtimeModulation(delta) {
   if (liveEl) liveEl.textContent = `Volume ${gainPct}% · Hauteur ${pitchPct}%`;
 }
 
-function updateSoundState(value, delta) {
+function updateSoundState(value, delta, rawDeltaForModulation) {
   document.getElementById("rawCurrent").textContent = value;
   document.getElementById("rawDelta").textContent = delta.toFixed(0);
   updateGauge(delta);
-  updateRealtimeModulation(delta);
+  // On utilise le delta BRUT (non lisse) pour la modulation : plus reactif et
+  // plus fidele a l'intensite reelle et instantanee du geste, alors que le
+  // delta lisse reste utilise pour la logique d'etat (evite les a-coups).
+  updateRealtimeModulation(rawDeltaForModulation !== undefined ? rawDeltaForModulation : delta);
   lastDelta = delta;
 
   if (value === 0) {
@@ -1723,7 +1819,7 @@ document.getElementById("btnConnect").addEventListener("click", async () => {
         const rawDelta = value - lastValue;
         smoothedDelta = SMOOTHING_ALPHA * rawDelta + (1 - SMOOTHING_ALPHA) * smoothedDelta;
         log(`-> valeur = ${value}, delta brut = ${rawDelta}, delta lisse = ${smoothedDelta.toFixed(0)}`);
-        updateSoundState(value, smoothedDelta);
+        updateSoundState(value, smoothedDelta, rawDelta);
       } else {
         log(`-> premiere valeur recue = ${value} (pas encore de delta)`);
       }
@@ -1756,6 +1852,7 @@ document.getElementById("btnConnect").addEventListener("click", async () => {
 restoreThresholds();
 restoreCrossfade();
 restoreIdleMuteSettings();
+restoreSoundVolumes();
 restoreSoundSettings();
 restoreModulationSettings();
 restoreSavedSounds();
