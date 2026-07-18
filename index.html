@@ -703,6 +703,16 @@
       </div>
 
       <div class="card">
+        <p class="card-title">Fondu entre les sons</p>
+        <input type="range" id="crossfade" min="0" max="800" step="50" value="150">
+        <div class="row">
+          <span>Duree du fondu</span>
+          <span class="mono" id="crossfadeVal">150 ms</span>
+        </div>
+        <p class="hint">Adoucit la transition quand un son en remplace un autre (par exemple entre le demarrage moteur et le neutre), pour eviter un "trou" de silence. Mets 0 pour un enchainement net, sans fondu. Sauvegarde automatiquement.</p>
+      </div>
+
+      <div class="card">
         <p class="card-title">Comportement des sons</p>
         <p class="hint" style="margin-bottom:14px;">Pour chacun de ces sons, choisis s'il doit jouer en boucle tant que l'action dure, ou une seule fois integralement ; et s'il peut etre coupe plus tot si un evenement contraire survient.</p>
 
@@ -968,6 +978,12 @@ document.getElementById("threshold").addEventListener("input", (e) => {
   saveThreshold(threshold);
 });
 
+document.getElementById("crossfade").addEventListener("input", (e) => {
+  crossfadeMs = parseFloat(e.target.value);
+  document.getElementById("crossfadeVal").textContent = crossfadeMs + " ms";
+  saveCrossfade(crossfadeMs);
+});
+
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const masterGain = audioCtx.createGain();
 masterGain.gain.value = 1;
@@ -1166,6 +1182,52 @@ document.getElementById("clearStartup").addEventListener("click", () => clearSou
 let desiredState = "idle";
 let lockedPlayback = null;
 
+// ---------------- Fondu entre les sons (crossfade) ----------------
+let crossfadeMs = 150;
+
+function saveCrossfade(value) {
+  try { localStorage.setItem("nosfet_aeon_crossfade", String(value)); } catch (e) {}
+}
+
+function restoreCrossfade() {
+  try {
+    const saved = localStorage.getItem("nosfet_aeon_crossfade");
+    if (saved !== null) crossfadeMs = parseFloat(saved);
+  } catch (e) {}
+  document.getElementById("crossfade").value = crossfadeMs;
+  document.getElementById("crossfadeVal").textContent = crossfadeMs + " ms";
+}
+
+// Demarre une nouvelle source en fondu-enchaine avec celle en cours (s'il y en
+// a une) : la nouvelle monte progressivement en volume pendant que l'ancienne
+// redescend, puis s'arrete. Avec un fondu regle sur 0, le comportement revient
+// a un enchainement net (immediat).
+function crossfadeIn(newSource, newGainNode) {
+  const now = audioCtx.currentTime;
+  const fadeSec = crossfadeMs / 1000;
+
+  if (fadeSec > 0) {
+    newGainNode.gain.setValueAtTime(0, now);
+    newGainNode.gain.linearRampToValueAtTime(1, now + fadeSec);
+  } else {
+    newGainNode.gain.setValueAtTime(1, now);
+  }
+
+  if (currentSource && currentGainNode) {
+    const oldSource = currentSource;
+    const oldGain = currentGainNode;
+    if (fadeSec > 0) {
+      const startValue = oldGain.gain.value;
+      oldGain.gain.cancelScheduledValues(now);
+      oldGain.gain.setValueAtTime(startValue, now);
+      oldGain.gain.linearRampToValueAtTime(0, now + fadeSec);
+      setTimeout(() => { try { oldSource.stop(); } catch (e) {} }, fadeSec * 1000 + 30);
+    } else {
+      try { oldSource.stop(); } catch (e) {}
+    }
+  }
+}
+
 function playLoop(key) {
   if (currentPlaying === key) return;
 
@@ -1179,18 +1241,14 @@ function playLoop(key) {
     return;
   }
 
-  if (currentSource) {
-    try { currentSource.stop(); } catch (e) {}
-  }
-
   const source = audioCtx.createBufferSource();
   source.buffer = buffers[key];
   source.loop = true;
   const gainNode = audioCtx.createGain();
-  gainNode.gain.value = 1;
   source.connect(gainNode);
   gainNode.connect(masterGain);
   source.start(0);
+  crossfadeIn(source, gainNode);
 
   currentSource = source;
   currentGainNode = gainNode;
@@ -1206,15 +1264,10 @@ function playOnceThenReevaluate(key) {
     return;
   }
 
-  if (currentSource) {
-    try { currentSource.stop(); } catch (e) {}
-  }
-
   const source = audioCtx.createBufferSource();
   source.buffer = buffers[key];
   source.loop = false;
   const gainNode = audioCtx.createGain();
-  gainNode.gain.value = 1;
   source.connect(gainNode);
   gainNode.connect(masterGain);
   source.onended = () => {
@@ -1228,6 +1281,7 @@ function playOnceThenReevaluate(key) {
     }
   };
   source.start(0);
+  crossfadeIn(source, gainNode);
 
   currentSource = source;
   currentGainNode = gainNode;
@@ -1575,6 +1629,7 @@ document.getElementById("btnConnect").addEventListener("click", async () => {
 
 // ---------------- Initialisation : restaurer les reglages sauvegardes ----------------
 restoreThreshold();
+restoreCrossfade();
 restoreSoundSettings();
 restoreModulationSettings();
 restoreSavedSounds();
