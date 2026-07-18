@@ -580,7 +580,7 @@
       <div class="brand-icon">🏎️</div>
       <div class="brand-text">
         <div class="title">EUC MOTOR</div>
-        <div class="subtitle">SIMULATEUR SONORE V12</div>
+        <div class="subtitle">SIMULATEUR SONORE !!</div>
       </div>
     </div>
     <div class="conn-dot" id="connDot"></div>
@@ -598,7 +598,7 @@
 
       <div class="card">
         <p class="card-title">Connexion</p>
-        <button class="btn-primary" id="btnConnect">Connecter la roue</button>
+        <button class="btn-primary" id="btnConnect">Connecter ta roue</button>
         <div class="row" style="margin-top:10px;">
           <span>Etat</span>
           <span id="bleState" class="mono">Non connecte</span>
@@ -1368,7 +1368,7 @@ let lastDelta = 0;
 // En dessous de cette variation, on considere qu'il n'y a "pas de mouvement"
 // (meme petit bruit d'equilibrage naturel toujours present a l'arret).
 const IDLE_MOVEMENT_EPSILON = 15;
-const idleMuteSettings = { enabled: false };
+const idleMuteSettings = { enabled: true };
 
 function saveIdleMuteSettings() {
   try { localStorage.setItem("nosfet_aeon_idle_mute", JSON.stringify(idleMuteSettings)); } catch (e) {}
@@ -1737,7 +1737,7 @@ document.getElementById("btnConnect").addEventListener("click", async () => {
     device.addEventListener("gattserverdisconnected", () => {
       document.getElementById("bleState").textContent = "Deconnecte";
       document.getElementById("connDot").classList.remove("on");
-      connectBtn.textContent = "Connecter la roue";
+      connectBtn.textContent = "Connecter ta roue";
       connectBtn.classList.remove("connected");
       log("Deconnecte de la roue");
     });
