@@ -103,6 +103,46 @@
     box-shadow: 0 0 10px 2px rgba(51,224,138,0.6);
   }
 
+  /* ---------- Ecran d'accueil (installation) ---------- */
+  .welcome-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: radial-gradient(ellipse 120% 80% at 50% -10%, #131a2c 0%, var(--bg) 55%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .welcome-screen.hidden { display: none; }
+  .welcome-icon {
+    font-size: 54px;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 20px rgba(0,229,255,0.35));
+  }
+  .welcome-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.1em;
+    margin: 0;
+  }
+  .welcome-tagline {
+    color: var(--text-dim);
+    font-size: 13.5px;
+    line-height: 1.6;
+    max-width: 300px;
+    margin: 14px 0 32px;
+  }
+  .welcome-btn { max-width: 300px; margin-bottom: 12px; }
+  .welcome-hint {
+    display: none;
+    max-width: 300px;
+    margin-top: 10px;
+  }
+  .welcome-hint.show { display: block; }
+
   /* ---------- Bandeau d'installation PWA ---------- */
   .install-banner {
     display: none;
@@ -503,6 +543,15 @@
 </head>
 <body>
 
+<div class="welcome-screen" id="welcomeScreen">
+  <div class="welcome-icon">🏎️</div>
+  <h1 class="welcome-title">NOSFET AEON</h1>
+  <p class="welcome-tagline">Simulateur de son moteur V12, pilote en direct par les donnees Bluetooth de ta roue electrique.</p>
+  <button class="btn-primary welcome-btn" id="btnWelcomeInstall">📲 Installer l'application</button>
+  <button class="btn-secondary welcome-btn" id="btnWelcomeContinue">Continuer sans installer</button>
+  <p class="hint welcome-hint" id="welcomeIosHint">Sur iPhone : appuie sur le bouton Partager de Safari, puis "Sur l'ecran d'accueil".</p>
+</div>
+
 <div class="app-shell">
 
   <header>
@@ -807,6 +856,54 @@
 </div>
 
 <script>
+// ---------------- Installation PWA (capture precoce + ecran d'accueil) ----------------
+let deferredInstallPrompt = null;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById("installBanner").classList.add("show");
+});
+
+window.addEventListener("appinstalled", () => {
+  document.getElementById("installBanner").classList.remove("show");
+  document.getElementById("welcomeScreen").classList.add("hidden");
+  try { localStorage.setItem("nosfet_aeon_skip_welcome", "1"); } catch (e) {}
+});
+
+async function triggerInstallPrompt(iosHintId) {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    document.getElementById("installBanner").classList.remove("show");
+  } else if (iosHintId) {
+    // iOS Safari (et certains navigateurs) ne proposent pas d'installation
+    // automatique : on affiche la marche a suivre manuelle.
+    document.getElementById(iosHintId).classList.add("show");
+  }
+}
+
+(function initWelcomeScreen() {
+  const welcomeScreen = document.getElementById("welcomeScreen");
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  let alreadyContinued = false;
+  try { alreadyContinued = localStorage.getItem("nosfet_aeon_skip_welcome") === "1"; } catch (e) {}
+
+  if (isStandalone || alreadyContinued) {
+    welcomeScreen.classList.add("hidden");
+  }
+
+  document.getElementById("btnWelcomeInstall").addEventListener("click", () => {
+    triggerInstallPrompt("welcomeIosHint");
+  });
+
+  document.getElementById("btnWelcomeContinue").addEventListener("click", () => {
+    try { localStorage.setItem("nosfet_aeon_skip_welcome", "1"); } catch (e) {}
+    welcomeScreen.classList.add("hidden");
+  });
+})();
+
 // ---------------- Navigation par onglets ----------------
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -1482,27 +1579,9 @@ restoreSoundSettings();
 restoreModulationSettings();
 restoreSavedSounds();
 
-// ---------------- Bandeau d'installation PWA ----------------
-let deferredInstallPrompt = null;
-const installBanner = document.getElementById("installBanner");
-
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  installBanner.classList.add("show");
-});
-
-document.getElementById("btnInstallApp").addEventListener("click", async () => {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt = null;
-  installBanner.classList.remove("show");
-});
-
-window.addEventListener("appinstalled", () => {
-  installBanner.classList.remove("show");
-  log("Application installee sur l'ecran d'accueil");
+// ---------------- Bouton du bandeau d'installation (reutilise la logique commune) ----------------
+document.getElementById("btnInstallApp").addEventListener("click", () => {
+  triggerInstallPrompt(null);
 });
 
 // ---------------- Enregistrement du service worker (mode PWA / hors-ligne) ----------------
