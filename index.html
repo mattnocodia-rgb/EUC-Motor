@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nosfet Aeon — Son V12</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0d14">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nosfet Aeon">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0d14;
+    --surface: #12161f;
+    --surface-2: #191e2b;
+    --border: #232a3a;
+    --text: #e8ecf4;
+    --text-dim: #8b93a7;
+    --text-faint: #565f75;
+    --accent-cyan: #00e5ff;
+    --accel: #33e08a;
+    --brake: #ff5a4e;
+    --parking: #7c8cff;
+    --idle: #576079;
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: radial-gradient(ellipse 120% 80% at 50% -10%, #131a2c 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  h1, h2, .display {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .app-shell {
+    max-width: 520px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    padding: 18px 20px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-icon {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent-cyan), #0a5b8f);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 18px -4px rgba(0,229,255,0.6);
+  }
+  .brand-text .title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.1;
+  }
+  .brand-text .subtitle {
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+  }
+  .conn-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--idle);
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.03);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .conn-dot.on {
+    background: var(--accel);
+    box-shadow: 0 0 10px 2px rgba(51,224,138,0.6);
+  }
+
+  /* ---------- Layout ---------- */
+  main { flex: 1; padding: 4px 16px 24px; }
+  .panel { display: none; animation: fadeIn 0.25s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 10px;
+  }
+  .hint {
+    font-size: 12.5px;
+    color: var(--text-faint);
+    line-height: 1.5;
+    margin: 6px 0 0;
+  }
+
+  /* ---------- Buttons ---------- */
+  button {
+    font-family: 'Inter', sans-serif;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    width: 100%;
+    cursor: pointer;
+    transition: transform 0.08s, filter 0.15s;
+  }
+  button:active { transform: scale(0.98); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent-cyan), #0894b3);
+    color: #001318;
+    box-shadow: 0 4px 20px -6px rgba(0,229,255,0.5);
+  }
+  .btn-primary.connected {
+    background: linear-gradient(135deg, var(--accel), #1a9c5c);
+    color: #001a0d;
+    box-shadow: 0 4px 20px -6px rgba(51,224,138,0.5);
+  }
+  .btn-secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-danger {
+    background: rgba(255,90,78,0.12);
+    color: var(--brake);
+    border: 1px solid rgba(255,90,78,0.3);
+  }
+  .btn-secondary.muted {
+    background: rgba(255,90,78,0.14);
+    color: var(--brake);
+    border: 1px solid rgba(255,90,78,0.35);
+  }
+  .btn-small {
+    width: auto;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row button { margin-bottom: 0; }
+
+  /* ---------- Status pill (dashboard) ---------- */
+  .status-pill {
+    text-align: center;
+    padding: 22px 16px;
+    border-radius: var(--radius);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+  }
+  .status-pill.st-idle    { color: var(--text-dim); }
+  .status-pill.st-accel   { color: var(--accel); border-color: rgba(51,224,138,0.4); box-shadow: 0 0 30px -12px rgba(51,224,138,0.5); }
+  .status-pill.st-brake   { color: var(--brake); border-color: rgba(255,90,78,0.4); box-shadow: 0 0 30px -12px rgba(255,90,78,0.5); }
+  .status-pill.st-parking { color: var(--parking); border-color: rgba(124,140,255,0.4); box-shadow: 0 0 30px -12px rgba(124,140,255,0.5); }
+
+  /* ---------- Gauge ---------- */
+  .gauge-wrap { padding: 6px 4px 2px; }
+  .gauge-track {
+    position: relative;
+    height: 14px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .gauge-center-mark {
+    position: absolute;
+    left: 50%; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+  .gauge-fill {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%;
+    width: 0%;
+    border-radius: 10px;
+    transition: width 0.15s ease, background 0.2s ease, left 0.15s ease;
+  }
+  .gauge-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    margin-top: 6px;
+    letter-spacing: 0.03em;
+  }
+  .gauge-readout {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 14px;
+  }
+  .gauge-readout .item { text-align: center; flex: 1; }
+  .gauge-readout .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+  }
+  .gauge-readout .lbl {
+    font-size: 10.5px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+
+  .row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-dim); margin: 4px 0; }
+
+  /* ---------- Sound rows ---------- */
+  .sound-row {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .sound-row:last-child { border-bottom: none; }
+  .sound-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .sound-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .sound-dot.idle { background: var(--idle); }
+  .sound-dot.accel { background: var(--accel); }
+  .sound-dot.brake { background: var(--brake); }
+  .sound-dot.parking { background: var(--parking); }
+  .sound-dot.startup { background: var(--accent-cyan); }
+  .sound-name { font-weight: 600; font-size: 15px; }
+  .sound-desc { font-size: 12px; color: var(--text-faint); margin: 0 0 10px 20px; line-height: 1.4; }
+  .file-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  input[type="file"] {
+    flex: 1;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    padding: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  input[type="file"]::file-selector-button {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    margin-right: 8px;
+    cursor: pointer;
+  }
+  .file-status {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 6px;
+  }
+  .file-status.loaded { color: var(--accel); }
+
+  /* ---------- Slider ---------- */
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent-cyan);
+    height: 6px;
+    margin: 10px 0 4px;
+  }
+
+  /* ---------- Debug log ---------- */
+  #debugLog {
+    background: #05070c;
+    color: #4de08a;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    padding: 10px;
+    height: 240px;
+    overflow-y: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin-bottom: 10px;
+  }
+
+  .collapsible-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .collapsible-body { display: none; margin-top: 12px; }
+  .collapsible-body.open { display: block; }
+  .chevron { transition: transform 0.2s; color: var(--text-faint); }
+  .chevron.open { transform: rotate(180deg); }
+
+  /* ---------- Marqueurs de capture ---------- */
+  .sound-setting-row {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .sound-setting-row:last-of-type { border-bottom: none; }
+  .sound-setting-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin: 0 0 6px;
+  }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    cursor: pointer;
+  }
+  .checkbox-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-cyan);
+    flex-shrink: 0;
+  }
+  .checkbox-row input[type="checkbox"]:disabled + * { opacity: 0.5; }
+  .test-sequence {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .test-sequence-list {
+    margin: 8px 0 0;
+    padding-left: 20px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+  .test-sequence-list li strong { color: var(--text); }
+  .marker-banner {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 12px 10px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    margin-bottom: 14px;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .marker-banner.flash {
+    background: rgba(0,229,255,0.14);
+    border-color: rgba(0,229,255,0.5);
+    color: var(--accent-cyan);
+  }
+  .marker-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .marker-step {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .marker-btn { flex: 1; margin-bottom: 0; }
+  .info-btn {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-style: italic;
+    font-size: 14px;
+    padding: 0;
+  }
+  .info-btn.open { color: var(--accent-cyan); border-color: rgba(0,229,255,0.4); }
+  .marker-info {
+    display: none;
+    font-size: 12px;
+    color: var(--text-faint);
+    line-height: 1.5;
+    margin: 6px 4px 14px;
+  }
+  .marker-info.open { display: block; }
+  .chevron.open { transform: rotate(180deg); }
+
+  /* ---------- Bottom tab bar ---------- */
+  nav.tabbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(18,22,31,0.92);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    max-width: 520px;
+    margin: 0 auto;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav.tabbar button {
+    flex: 1;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 12px 4px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-faint);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  nav.tabbar button.active { color: var(--accent-cyan); }
+  nav.tabbar button .icon { font-size: 20px; }
+  nav.tabbar button:active { transform: none; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🏎️</div>
+      <div class="brand-text">
+        <div class="title">NOSFET AEON</div>
+        <div class="subtitle">SIMULATEUR SONORE V12</div>
+      </div>
+    </div>
+    <div class="conn-dot" id="connDot"></div>
+  </header>
+
+  <main>
+
+    <!-- ============ ONGLET TABLEAU DE BORD ============ -->
+    <section class="panel active" id="panel-dashboard">
+
+      <div class="card">
+        <p class="card-title">Connexion</p>
+        <button class="btn-primary" id="btnConnect">Connecter la roue</button>
+        <div class="row" style="margin-top:10px;">
+          <span>Etat</span>
+          <span id="bleState" class="mono">Non connecte</span>
+        </div>
+        <p class="hint">Appuie sur ce bouton pour associer l'application a ta roue Nosfet en Bluetooth. Ton telephone va te proposer une liste d'appareils : choisis celui qui s'appelle "NF...".</p>
+      </div>
+
+      <div class="card">
+        <button class="btn-secondary" id="btnMute">🔊 Couper le son</button>
+        <p class="hint" style="margin-top:8px;">Coupe ou reactive tous les sons instantanement, par exemple si tu croises quelqu'un et que tu ne veux pas deranger. La detection continue de fonctionner en arriere-plan : appuie a nouveau pour tout reactiver normalement.</p>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Etat actuel</p>
+        <div class="status-pill st-idle" id="soundState">NEUTRE</div>
+
+        <div class="gauge-wrap">
+          <div class="gauge-track">
+            <div class="gauge-center-mark"></div>
+            <div class="gauge-fill" id="gaugeFill"></div>
+          </div>
+          <div class="gauge-labels">
+            <span>FREINAGE</span>
+            <span>ACCELERATION</span>
+          </div>
+        </div>
+
+        <div class="gauge-readout">
+          <div class="item">
+            <div class="val mono" id="rawCurrent">–</div>
+            <div class="lbl">Valeur brute</div>
+          </div>
+          <div class="item">
+            <div class="val mono" id="rawDelta">–</div>
+            <div class="lbl">Variation</div>
+          </div>
+        </div>
+        <p class="hint">Cette jauge reagit en temps reel a l'acceleration et au freinage de la roue. Elle sert surtout a verifier que tout fonctionne bien pendant que tu roules.</p>
+      </div>
+
+    </section>
+
+    <!-- ============ ONGLET SONS ============ -->
+    <section class="panel" id="panel-sounds">
+
+      <div class="card">
+        <p class="card-title">Bibliotheque de sons</p>
+        <p class="hint" style="margin-bottom:12px;">Choisis un fichier audio pour chacune des 5 situations. Le son se declenche automatiquement selon ce que fait la roue. Tes choix sont sauvegardes automatiquement sur cet appareil : pas besoin de les recharger a chaque ouverture de l'application.</p>
+
+        <div class="sound-row">
+          <div class="sound-head"><span class="sound-dot parking"></span><span class="sound-name">Parking (P)</span></div>
+          <p class="sound-desc">Joue en boucle quand la roue est allumee mais garee, moteur coupe.</p>
+          <div class="file-input-wrap">
+            <input type="file" id="fileParking" accept="audio/*">
+            <button class="btn-danger btn-small" id="clearParking">Retirer</button>
+          </div>
+          <div class="file-status" id="statusParking">Aucun fichier choisi</div>
+        </div>
+
+        <div class="sound-row">
+          <div class="sound-head"><span class="sound-dot startup"></span><span class="sound-name">Demarrage moteur</span></div>
+          <p class="sound-desc">Se joue une fois, integralement et sans interruption, quand tu sors du mode Parking : simule l'allumage du moteur avant de repasser en Neutre.</p>
+          <div class="file-input-wrap">
+            <input type="file" id="fileStartup" accept="audio/*">
+            <button class="btn-danger btn-small" id="clearStartup">Retirer</button>
+          </div>
+          <div class="file-status" id="statusStartup">Aucun fichier choisi</div>
+        </div>
+
+        <div class="sound-row">
+          <div class="sound-head"><span class="sound-dot idle"></span><span class="sound-name">Neutre</span></div>
+          <p class="sound-desc">Joue en boucle quand la roue est allumee et equilibree, sans que tu accelerer ni freines.</p>
+          <div class="file-input-wrap">
+            <input type="file" id="fileIdle" accept="audio/*">
+            <button class="btn-danger btn-small" id="clearIdle">Retirer</button>
+          </div>
+          <div class="file-status" id="statusIdle">Aucun fichier choisi</div>
+        </div>
+
+        <div class="sound-row">
+          <div class="sound-head"><span class="sound-dot accel"></span><span class="sound-name">Acceleration</span></div>
+          <p class="sound-desc">Se joue une fois en entier des que tu accelerer, meme si tu relaches avant la fin.</p>
+          <div class="file-input-wrap">
+            <input type="file" id="fileAccel" accept="audio/*">
+            <button class="btn-danger btn-small" id="clearAccel">Retirer</button>
+          </div>
+          <div class="file-status" id="statusAccel">Aucun fichier choisi</div>
+        </div>
+
+        <div class="sound-row">
+          <div class="sound-head"><span class="sound-dot brake"></span><span class="sound-name">Freinage</span></div>
+          <p class="sound-desc">Se joue une fois en entier des que tu freines ou que tu recules.</p>
+          <div class="file-input-wrap">
+            <input type="file" id="fileBrake" accept="audio/*">
+            <button class="btn-danger btn-small" id="clearBrake">Retirer</button>
+          </div>
+          <div class="file-status" id="statusBrake">Aucun fichier choisi</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Tester le son</p>
+        <div class="btn-row">
+          <button class="btn-secondary" id="btnTestSound">Tester "Neutre"</button>
+          <button class="btn-danger" id="btnStopSound">Stop</button>
+        </div>
+        <p class="hint">Verifie que le son "Neutre" fonctionne, meme sans etre connecte a la roue.</p>
+      </div>
+
+    </section>
+
+    <!-- ============ ONGLET REGLAGES / DEBUG ============ -->
+    <section class="panel" id="panel-settings">
+
+      <div class="card">
+        <p class="card-title">Sensibilite</p>
+        <input type="range" id="threshold" min="20" max="1000" step="10" value="150">
+        <div class="row">
+          <span>Seuil actuel</span>
+          <span class="mono" id="thresholdVal">150</span>
+        </div>
+        <p class="hint">Determine a quel point la roue doit accelerer ou freiner avant que le son change. Un chiffre bas rend l'app tres reactive mais peut se declencher pour de petits mouvements ; un chiffre haut demande une action plus franche. Ce reglage est sauvegarde automatiquement.</p>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Comportement des sons</p>
+        <p class="hint" style="margin-bottom:14px;">Pour chacun de ces sons, choisis s'il doit jouer en boucle tant que l'action dure, ou une seule fois integralement ; et s'il peut etre coupe plus tot si un evenement contraire survient.</p>
+
+        <div class="sound-setting-row">
+          <p class="sound-setting-title">Demarrage moteur</p>
+          <label class="checkbox-row"><input type="checkbox" id="loop_startup"> Jouer en boucle tant que l'etat reste actif</label>
+          <label class="checkbox-row"><input type="checkbox" id="interrupt_startup"> Peut etre coupe par un evenement contraire (acceleration/freinage)</label>
+          <p class="hint" style="margin:2px 0 0;">Par defaut (case decochee), le son d'allumage entre Parking et Neutre se joue toujours integralement, quelle que soit l'intensite de l'acceleration ou du freinage detectee entre-temps.</p>
+        </div>
+
+        <div class="sound-setting-row">
+          <p class="sound-setting-title">Acceleration</p>
+          <label class="checkbox-row"><input type="checkbox" id="loop_accel"> Jouer en boucle tant que l'etat reste actif</label>
+          <label class="checkbox-row"><input type="checkbox" id="interrupt_accel"> Peut etre coupe par un freinage reel</label>
+        </div>
+
+        <div class="sound-setting-row">
+          <p class="sound-setting-title">Freinage</p>
+          <label class="checkbox-row"><input type="checkbox" id="loop_brake"> Jouer en boucle tant que l'etat reste actif</label>
+          <label class="checkbox-row"><input type="checkbox" id="interrupt_brake"> Peut etre coupe par une acceleration reelle</label>
+        </div>
+
+        <p class="hint">La case "peut etre coupe" n'a d'effet que si la lecture en boucle est desactivee. Ces reglages sont sauvegardes automatiquement.</p>
+      </div>
+
+      <div class="card">
+        <p class="card-title">Realisme sonore</p>
+        <p class="hint" style="margin-bottom:14px;">Fait varier le son d'acceleration et de freinage en fonction de l'intensite reelle du mouvement, en direct pendant que tu roules.</p>
+        <label class="checkbox-row"><input type="checkbox" id="modVolume"> Moduler le volume (plus fort si l'action est franche)</label>
+        <label class="checkbox-row"><input type="checkbox" id="modPitch"> Moduler aussi la hauteur du son (effet plus marque, a tester)</label>
+        <div class="row" style="margin-top:8px;">
+          <span>En direct</span>
+          <span class="mono" id="modLiveReadout">-</span>
+        </div>
+        <p class="hint">Cette ligne affiche la modulation appliquee en temps reel pendant qu'un son d'acceleration ou de freinage joue — utile pour verifier que le reglage a bien un effet.</p>
+        <p class="hint">Ces reglages sont sauvegardes automatiquement.</p>
+      </div>
+
+      <div class="card">
+        <div class="collapsible-toggle" id="toggleMarkers">
+          <p class="card-title" style="margin:0;">Marqueurs de capture (avance)</p>
+          <span class="chevron" id="chevronMarkers">▾</span>
+        </div>
+        <div class="collapsible-body" id="bodyMarkers">
+          <p class="hint" style="margin-bottom:10px;">
+            <strong>A quoi ca sert :</strong> ces boutons ajoutent un repere dans le journal technique (onglet ci-dessous), pour marquer "a partir de maintenant, je fais telle action". Ca sert uniquement si tu dois analyser en detail comment la roue reagit — par exemple si le son se declenche mal et que tu veux comprendre pourquoi, ou pour verifier que le reglage de sensibilite est bien ajuste.
+          </p>
+          <p class="hint" style="margin-bottom:14px;">
+            <strong>Comment les utiliser :</strong> juste avant de faire une action precise, appuie sur le bouton correspondant. Le bandeau ci-dessous confirme quel marqueur a ete pris en compte, meme si le journal technique defile trop vite pour le suivre a l'oeil.
+          </p>
+
+          <div class="test-sequence">
+            <p class="hint" style="margin-bottom:6px; color: var(--text);"><strong>Sequence de test recommandee</strong></p>
+            <p class="hint" style="margin-bottom:0;">Pour verifier que tout fonctionne correctement, refais cet enchainement dans l'ordre, en appuyant sur le bouton correspondant juste avant chaque etape :</p>
+            <ol class="test-sequence-list">
+              <li><strong>Parking</strong> — allume la roue sans monter dessus</li>
+              <li><strong>Neutre</strong> — monte dessus, reste stable sans bouger</li>
+              <li><strong>Acceleration</strong> — accelerer franchement quelques metres</li>
+              <li><strong>Freinage</strong> — freine ou recule franchement</li>
+              <li><strong>Neutre</strong> — redescends a l'arret, roue toujours equilibree</li>
+              <li><strong>Parking</strong> — repose la roue, moteur coupe</li>
+            </ol>
+          </div>
+
+          <div id="lastMarkerBanner" class="marker-banner">Aucun marqueur pose pour l'instant</div>
+
+          <div class="marker-row">
+            <span class="marker-step">1</span>
+            <button class="btn-secondary marker-btn" id="markStep1">PARKING</button>
+            <button class="info-btn" data-info="infoStep1">i</button>
+          </div>
+          <p class="marker-info" id="infoStep1">Roue allumee mais moteur/gyroscope non equilibre : elle est completement a l'arret, posee au sol ou sur sa bequille, sans s'auto-stabiliser.</p>
+
+          <div class="marker-row">
+            <span class="marker-step">2</span>
+            <button class="btn-secondary marker-btn" id="markStep2">NEUTRE</button>
+            <button class="info-btn" data-info="infoStep2">i</button>
+          </div>
+          <p class="marker-info" id="infoStep2">Roue allumee et equilibree : elle tient debout toute seule, sans que tu accelerer ni freines.</p>
+
+          <div class="marker-row">
+            <span class="marker-step">3</span>
+            <button class="btn-secondary marker-btn" id="markStep3">ACCELERATION</button>
+            <button class="info-btn" data-info="infoStep3">i</button>
+          </div>
+          <p class="marker-info" id="infoStep3">Tu accelerer reellement : la roue avance en prenant de la vitesse.</p>
+
+          <div class="marker-row">
+            <span class="marker-step">4</span>
+            <button class="btn-secondary marker-btn" id="markStep4">FREINAGE</button>
+            <button class="info-btn" data-info="infoStep4">i</button>
+          </div>
+          <p class="marker-info" id="infoStep4">Tu freines ou tu recules reellement : la roue ralentit ou repart en arriere.</p>
+
+          <div class="marker-row">
+            <span class="marker-step">5</span>
+            <button class="btn-secondary marker-btn" id="markStep5">NEUTRE</button>
+            <button class="info-btn" data-info="infoStep5">i</button>
+          </div>
+          <p class="marker-info" id="infoStep5">Roue allumee et equilibree : elle tient debout toute seule, sans que tu accelerer ni freines.</p>
+
+          <div class="marker-row">
+            <span class="marker-step">6</span>
+            <button class="btn-secondary marker-btn" id="markStep6">PARKING</button>
+            <button class="info-btn" data-info="infoStep6">i</button>
+          </div>
+          <p class="marker-info" id="infoStep6">Roue allumee mais moteur/gyroscope non equilibre : elle est completement a l'arret, posee au sol ou sur sa bequille, sans s'auto-stabiliser.</p>
+
+          <p class="hint" style="margin-top:10px;">
+            Si tu n'as pas besoin d'analyser le fonctionnement en detail, tu peux ignorer cette section : elle n'a aucun effet sur le son joue par l'application.
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="collapsible-toggle" id="toggleDebug">
+          <p class="card-title" style="margin:0;">Journal technique (debug)</p>
+          <span class="chevron" id="chevronDebug">▾</span>
+        </div>
+        <div class="collapsible-body" id="bodyDebug">
+          <div id="debugLog">En attente de connexion...</div>
+          <div class="btn-row" style="margin-bottom:8px;">
+            <button class="btn-secondary btn-small" id="btnPauseLog">Pause</button>
+            <button class="btn-secondary btn-small" id="btnCopyLog">Copier</button>
+            <button class="btn-danger btn-small" id="btnClearLog">Vider</button>
+          </div>
+          <button class="btn-primary" id="btnExportLog">Exporter le journal</button>
+          <p class="hint">Telecharge le journal complet dans un fichier texte. Utile pour l'envoyer au createur de l'application afin qu'il puisse l'aider a fonctionner sur d'autres roues.</p>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="panel-dashboard">
+      <span class="icon">📡</span>
+      <span>Tableau de bord</span>
+    </button>
+    <button class="tab-btn" data-tab="panel-sounds">
+      <span class="icon">🔊</span>
+      <span>Sons</span>
+    </button>
+    <button class="tab-btn" data-tab="panel-settings">
+      <span class="icon">⚙️</span>
+      <span>Reglages</span>
+    </button>
+  </nav>
+
+</div>
+
+<script>
+// ---------------- Navigation par onglets ----------------
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
+  });
+});
+
+function setupCollapsible(toggleId, bodyId, chevronId) {
+  const toggle = document.getElementById(toggleId);
+  const body = document.getElementById(bodyId);
+  const chevron = document.getElementById(chevronId);
+  toggle.addEventListener("click", () => {
+    body.classList.toggle("open");
+    chevron.classList.toggle("open");
+  });
+}
+setupCollapsible("toggleMarkers", "bodyMarkers", "chevronMarkers");
+setupCollapsible("toggleDebug", "bodyDebug", "chevronDebug");
+
+// ---------------- Config protocole (Gotway/Veteran/Nosfet) ----------------
+const SERVICE_UUID = 0xFFE0;
+const CHAR_UUID    = 0xFFE1;
+
+let device, server, characteristic;
+let threshold = 150;
+let lastValue = null;
+let smoothedDelta = 0;
+const SMOOTHING_ALPHA = 0.3;
+
+const debugLogEl = document.getElementById("debugLog");
+let logPaused = false;
+function log(msg) {
+  if (logPaused) return;
+  const time = new Date().toLocaleTimeString();
+  debugLogEl.textContent += `[${time}] ${msg}\n`;
+  debugLogEl.scrollTop = debugLogEl.scrollHeight;
+}
+
+document.getElementById("btnPauseLog").addEventListener("click", (e) => {
+  logPaused = !logPaused;
+  e.target.textContent = logPaused ? "Reprendre" : "Pause";
+});
+
+document.getElementById("btnCopyLog").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(debugLogEl.textContent);
+    const btn = document.getElementById("btnCopyLog");
+    const original = btn.textContent;
+    btn.textContent = "Copie !";
+    setTimeout(() => { btn.textContent = original; }, 1200);
+  } catch (err) {
+    alert("Impossible de copier automatiquement, selectionne le texte manuellement.");
+  }
+});
+
+document.getElementById("threshold").addEventListener("input", (e) => {
+  threshold = parseFloat(e.target.value);
+  document.getElementById("thresholdVal").textContent = threshold.toFixed(0);
+  saveThreshold(threshold);
+});
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const masterGain = audioCtx.createGain();
+masterGain.gain.value = 1;
+masterGain.connect(audioCtx.destination);
+let isMuted = false;
+const buffers = { idle: null, accel: null, brake: null, parking: null, startup: null };
+let currentSource = null;
+let currentPlaying = null;
+let currentGainNode = null; // noeud de gain du son en cours, utilise pour moduler volume/hauteur en direct
+
+// ---------------- Sauvegarde locale (sons + seuil conserves entre sessions) ----------------
+const DB_NAME = "nosfet_aeon_sounds";
+const STORE_NAME = "sounds";
+
+function openSoundsDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      req.result.createObjectStore(STORE_NAME);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveSoundToDB(key, blob, fileName) {
+  try {
+    const db = await openSoundsDB();
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).put({ blob, fileName }, key);
+    return new Promise((resolve) => { tx.oncomplete = resolve; tx.onerror = resolve; });
+  } catch (e) {
+    log(`Sauvegarde locale impossible pour "${key}" : ${e.message}`);
+  }
+}
+
+async function deleteSoundFromDB(key) {
+  try {
+    const db = await openSoundsDB();
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).delete(key);
+    return new Promise((resolve) => { tx.oncomplete = resolve; tx.onerror = resolve; });
+  } catch (e) { /* ignore */ }
+}
+
+async function loadSoundFromDB(key) {
+  try {
+    const db = await openSoundsDB();
+    const tx = db.transaction(STORE_NAME, "readonly");
+    return new Promise((resolve) => {
+      const req = tx.objectStore(STORE_NAME).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
+async function restoreSavedSounds() {
+  for (const key of Object.keys(statusLabels)) {
+    const saved = await loadSoundFromDB(key);
+    if (saved && saved.blob) {
+      try {
+        const arrayBuffer = await saved.blob.arrayBuffer();
+        buffers[key] = await audioCtx.decodeAudioData(arrayBuffer);
+        setStatus(key, `✓ ${saved.fileName} (${buffers[key].duration.toFixed(1)}s) — sauvegarde`, true);
+        log(`Son "${key}" restaure depuis la sauvegarde locale (${saved.fileName})`);
+      } catch (e) {
+        log(`Impossible de restaurer le son "${key}" : ${e.message}`);
+      }
+    }
+  }
+}
+
+function saveThreshold(value) {
+  try { localStorage.setItem("nosfet_aeon_threshold", String(value)); } catch (e) {}
+}
+
+function restoreThreshold() {
+  try {
+    const saved = localStorage.getItem("nosfet_aeon_threshold");
+    if (saved !== null) {
+      threshold = parseFloat(saved);
+      document.getElementById("threshold").value = threshold;
+      document.getElementById("thresholdVal").textContent = threshold.toFixed(0);
+    }
+  } catch (e) {}
+}
+
+// ---------------- Comportement des sons evenementiels (configurable) ----------------
+// loop: le son boucle tant que l'etat reste actif, coupe immediatement au changement.
+// interruptible: (uniquement pertinent si loop=false) le son peut etre coupe avant sa fin
+// si un evenement reel contraire survient ; sinon il se joue toujours integralement.
+const soundSettings = {
+  startup: { loop: false, interruptible: false },
+  accel:   { loop: false, interruptible: true },
+  brake:   { loop: false, interruptible: true },
+};
+
+function saveSoundSettings() {
+  try { localStorage.setItem("nosfet_aeon_sound_settings", JSON.stringify(soundSettings)); } catch (e) {}
+}
+
+function restoreSoundSettings() {
+  try {
+    const saved = localStorage.getItem("nosfet_aeon_sound_settings");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      Object.keys(soundSettings).forEach(key => {
+        if (parsed[key]) Object.assign(soundSettings[key], parsed[key]);
+      });
+    }
+  } catch (e) {}
+  Object.keys(soundSettings).forEach(key => {
+    const loopEl = document.getElementById(`loop_${key}`);
+    const interruptEl = document.getElementById(`interrupt_${key}`);
+    if (loopEl) loopEl.checked = soundSettings[key].loop;
+    if (interruptEl) {
+      interruptEl.checked = soundSettings[key].interruptible;
+      interruptEl.disabled = soundSettings[key].loop;
+    }
+  });
+}
+
+function setupSoundSettingControls(key) {
+  const loopEl = document.getElementById(`loop_${key}`);
+  const interruptEl = document.getElementById(`interrupt_${key}`);
+  loopEl.addEventListener("change", () => {
+    soundSettings[key].loop = loopEl.checked;
+    interruptEl.disabled = loopEl.checked;
+    saveSoundSettings();
+  });
+  interruptEl.addEventListener("change", () => {
+    soundSettings[key].interruptible = interruptEl.checked;
+    saveSoundSettings();
+  });
+}
+setupSoundSettingControls("startup");
+setupSoundSettingControls("accel");
+setupSoundSettingControls("brake");
+
+const statusLabels = { idle: "statusIdle", accel: "statusAccel", brake: "statusBrake", parking: "statusParking", startup: "statusStartup" };
+
+function setStatus(key, text, loaded) {
+  const el = document.getElementById(statusLabels[key]);
+  el.textContent = text;
+  el.classList.toggle("loaded", !!loaded);
+}
+
+async function loadFile(inputId, key) {
+  document.getElementById(inputId).addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const arrayBuffer = await file.arrayBuffer();
+    try {
+      buffers[key] = await audioCtx.decodeAudioData(arrayBuffer);
+      setStatus(key, `✓ ${file.name} (${buffers[key].duration.toFixed(1)}s)`, true);
+      log(`Fichier "${key}" charge (${file.name}), duree ${buffers[key].duration.toFixed(1)}s`);
+      await saveSoundToDB(key, file, file.name);
+    } catch (err) {
+      setStatus(key, "Erreur de chargement", false);
+      log(`ERREUR decodage "${key}" : ${err.message}`);
+    }
+  });
+}
+loadFile("fileIdle", "idle");
+loadFile("fileAccel", "accel");
+loadFile("fileBrake", "brake");
+loadFile("fileParking", "parking");
+loadFile("fileStartup", "startup");
+
+function clearSound(key, inputId) {
+  buffers[key] = null;
+  document.getElementById(inputId).value = "";
+  setStatus(key, "Aucun fichier choisi", false);
+  if (currentPlaying === key && currentSource) {
+    try { currentSource.stop(); } catch (e) {}
+    currentSource = null;
+    currentGainNode = null;
+    currentPlaying = null;
+  }
+  if (lockedPlayback === key) {
+    lockedPlayback = null;
+  }
+  deleteSoundFromDB(key);
+  log(`Son "${key}" supprime`);
+}
+
+document.getElementById("clearIdle").addEventListener("click", () => clearSound("idle", "fileIdle"));
+document.getElementById("clearAccel").addEventListener("click", () => clearSound("accel", "fileAccel"));
+document.getElementById("clearBrake").addEventListener("click", () => clearSound("brake", "fileBrake"));
+document.getElementById("clearParking").addEventListener("click", () => clearSound("parking", "fileParking"));
+document.getElementById("clearStartup").addEventListener("click", () => clearSound("startup", "fileStartup"));
+
+let desiredState = "idle";
+let lockedPlayback = null;
+
+function playLoop(key) {
+  if (currentPlaying === key) return;
+
+  if (!buffers[key]) {
+    log(`Impossible de jouer "${key}" : fichier pas encore charge`);
+    if (currentSource) {
+      try { currentSource.stop(); } catch (e) {}
+      currentSource = null;
+    }
+    currentPlaying = null;
+    return;
+  }
+
+  if (currentSource) {
+    try { currentSource.stop(); } catch (e) {}
+  }
+
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffers[key];
+  source.loop = true;
+  const gainNode = audioCtx.createGain();
+  gainNode.gain.value = 1;
+  source.connect(gainNode);
+  gainNode.connect(masterGain);
+  source.start(0);
+
+  currentSource = source;
+  currentGainNode = gainNode;
+  currentPlaying = key;
+  log(`Lecture en boucle de "${key}" demarree`);
+}
+
+function playOnceThenReevaluate(key) {
+  if (!buffers[key]) {
+    log(`Impossible de jouer "${key}" : fichier pas encore charge`);
+    lockedPlayback = null;
+    applyState(desiredState);
+    return;
+  }
+
+  if (currentSource) {
+    try { currentSource.stop(); } catch (e) {}
+  }
+
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffers[key];
+  source.loop = false;
+  const gainNode = audioCtx.createGain();
+  gainNode.gain.value = 1;
+  source.connect(gainNode);
+  gainNode.connect(masterGain);
+  source.onended = () => {
+    if (lockedPlayback === key) {
+      lockedPlayback = null;
+      currentSource = null;
+      currentGainNode = null;
+      currentPlaying = null;
+      log(`Lecture unique de "${key}" terminee, reevaluation de l'etat`);
+      applyState(desiredState);
+    }
+  };
+  source.start(0);
+
+  currentSource = source;
+  currentGainNode = gainNode;
+  currentPlaying = key;
+  lockedPlayback = key;
+  log(`Lecture unique de "${key}" demarree (jusqu'au bout, non interruptible)`);
+}
+
+function triggerEventSound(key) {
+  const cfg = soundSettings[key];
+  if (cfg && cfg.loop) {
+    playLoop(key);
+  } else {
+    playOnceThenReevaluate(key);
+  }
+}
+
+function applyState(state) {
+  if (state === "idle") {
+    playLoop("idle");
+  } else if (state === "parking") {
+    playLoop("parking");
+  } else {
+    triggerEventSound(state);
+  }
+}
+
+document.getElementById("btnTestSound").addEventListener("click", async () => {
+  if (audioCtx.state === "suspended") await audioCtx.resume();
+  log(`AudioContext state = ${audioCtx.state}`);
+  playLoop("idle");
+});
+
+document.getElementById("btnStopSound").addEventListener("click", () => {
+  if (currentSource) {
+    try { currentSource.stop(); } catch (e) {}
+    currentSource = null;
+    currentGainNode = null;
+    currentPlaying = null;
+    lockedPlayback = null;
+    log("Son arrete manuellement");
+  }
+});
+
+const markerBanner = document.getElementById("lastMarkerBanner");
+let markerFlashTimeout = null;
+
+function setMarker(label) {
+  const time = new Date().toLocaleTimeString();
+  log(`===== MARQUEUR : ${label} =====`);
+  markerBanner.textContent = `Marqueur pose : ${label} (${time})`;
+  markerBanner.classList.add("flash");
+  if (markerFlashTimeout) clearTimeout(markerFlashTimeout);
+  markerFlashTimeout = setTimeout(() => {
+    markerBanner.classList.remove("flash");
+  }, 900);
+}
+
+document.getElementById("markStep1").addEventListener("click", () => setMarker("1. PARKING (depart)"));
+document.getElementById("markStep2").addEventListener("click", () => setMarker("2. NEUTRE (avant test)"));
+document.getElementById("markStep3").addEventListener("click", () => setMarker("3. ACCELERATION"));
+document.getElementById("markStep4").addEventListener("click", () => setMarker("4. FREINAGE"));
+document.getElementById("markStep5").addEventListener("click", () => setMarker("5. NEUTRE (apres test)"));
+document.getElementById("markStep6").addEventListener("click", () => setMarker("6. PARKING (fin)"));
+
+document.querySelectorAll(".info-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const infoEl = document.getElementById(btn.dataset.info);
+    const isOpen = infoEl.classList.toggle("open");
+    btn.classList.toggle("open", isOpen);
+  });
+});
+
+document.getElementById("btnMute").addEventListener("click", (e) => {
+  isMuted = !isMuted;
+  masterGain.gain.value = isMuted ? 0 : 1;
+  e.target.textContent = isMuted ? "🔇 Reactiver le son" : "🔊 Couper le son";
+  e.target.classList.toggle("muted", isMuted);
+  log(isMuted ? "Son coupe (sourdine)" : "Son reactive");
+});
+
+document.getElementById("btnClearLog").addEventListener("click", () => {
+  debugLogEl.textContent = "";
+});
+
+document.getElementById("btnExportLog").addEventListener("click", () => {
+  const now = new Date();
+  const stamp = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  const header =
+    `Export du journal technique\n` +
+    `Appareil connecte : ${device ? device.name : "(non connecte)"}\n` +
+    `Seuil de sensibilite au moment de l'export : ${threshold}\n` +
+    `Date d'export : ${now.toLocaleString()}\n` +
+    `${"=".repeat(50)}\n\n`;
+
+  const blob = new Blob([header + debugLogEl.textContent], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `journal-${stamp}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  log("Journal exporte en fichier texte");
+});
+
+// ---------------- Jauge visuelle ----------------
+const GAUGE_MAX = 1000; // valeur de delta correspondant a un remplissage complet de la jauge
+function updateGauge(delta) {
+  const fillEl = document.getElementById("gaugeFill");
+  const clamped = Math.max(-GAUGE_MAX, Math.min(GAUGE_MAX, delta));
+  const pct = (Math.abs(clamped) / GAUGE_MAX) * 50; // moitie de la jauge de chaque cote du centre
+
+  let color = "var(--idle)";
+  if (delta > threshold) color = "var(--accel)";
+  else if (delta < -threshold) color = "var(--brake)";
+
+  if (clamped >= 0) {
+    fillEl.style.left = "50%";
+    fillEl.style.width = pct + "%";
+  } else {
+    fillEl.style.left = (50 - pct) + "%";
+    fillEl.style.width = pct + "%";
+  }
+  fillEl.style.background = color;
+  fillEl.style.boxShadow = `0 0 12px 0 ${color}`;
+}
+
+let zeroStreak = 0;
+const PARKING_STREAK_THRESHOLD = 5;
+let previousState = "idle"; // pour detecter la transition parking -> neutre
+
+// ---------------- Modulation en temps reel (realisme sonore) ----------------
+// Plus l'acceleration/le freinage est franc, plus le son est fort (volume) et,
+// si active, plus aigu (hauteur/pitch) — comme un moteur qui repond a l'effort.
+const modulationSettings = { volume: true, pitch: false };
+
+function saveModulationSettings() {
+  try { localStorage.setItem("nosfet_aeon_modulation", JSON.stringify(modulationSettings)); } catch (e) {}
+}
+
+function restoreModulationSettings() {
+  try {
+    const saved = localStorage.getItem("nosfet_aeon_modulation");
+    if (saved) Object.assign(modulationSettings, JSON.parse(saved));
+  } catch (e) {}
+  document.getElementById("modVolume").checked = modulationSettings.volume;
+  document.getElementById("modPitch").checked = modulationSettings.pitch;
+}
+
+document.getElementById("modVolume").addEventListener("change", (e) => {
+  modulationSettings.volume = e.target.checked;
+  saveModulationSettings();
+});
+document.getElementById("modPitch").addEventListener("change", (e) => {
+  modulationSettings.pitch = e.target.checked;
+  saveModulationSettings();
+});
+
+function updateRealtimeModulation(delta) {
+  const liveEl = document.getElementById("modLiveReadout");
+
+  if (!currentGainNode || !currentSource || (currentPlaying !== "accel" && currentPlaying !== "brake")) {
+    if (liveEl) liveEl.textContent = "-";
+    return;
+  }
+
+  // Intensite calculee relativement au seuil configure (pas sur une echelle
+  // fixe) : 0 juste au-dessus du seuil, 1 des que la variation atteint 4x le
+  // seuil. Ainsi la modulation reste sensible quel que soit le reglage de
+  // sensibilite choisi.
+  const range = Math.max(threshold * 3, 50);
+  const intensity = Math.max(0, Math.min(1, (Math.abs(delta) - threshold) / range));
+
+  let gainPct = 100;
+  let pitchPct = 100;
+
+  if (modulationSettings.volume) {
+    const gain = 0.5 + 0.5 * intensity;
+    currentGainNode.gain.value = gain;
+    gainPct = Math.round(gain * 100);
+  } else {
+    currentGainNode.gain.value = 1;
+  }
+
+  if (modulationSettings.pitch) {
+    const rate = 0.9 + 0.25 * intensity;
+    currentSource.playbackRate.value = rate;
+    pitchPct = Math.round(rate * 100);
+  } else {
+    currentSource.playbackRate.value = 1;
+  }
+
+  if (liveEl) liveEl.textContent = `Volume ${gainPct}% · Hauteur ${pitchPct}%`;
+}
+
+function updateSoundState(value, delta) {
+  document.getElementById("rawCurrent").textContent = value;
+  document.getElementById("rawDelta").textContent = delta.toFixed(0);
+  updateGauge(delta);
+  updateRealtimeModulation(delta);
+
+  if (value === 0) {
+    zeroStreak++;
+  } else {
+    zeroStreak = 0;
+  }
+
+  const stateEl = document.getElementById("soundState");
+  let newState;
+
+  if (delta > threshold) {
+    newState = "accel";
+    stateEl.textContent = "ACCELERATION";
+    stateEl.className = "status-pill st-accel";
+  } else if (delta < -threshold) {
+    newState = "brake";
+    stateEl.textContent = "FREINAGE";
+    stateEl.className = "status-pill st-brake";
+  } else if (zeroStreak >= PARKING_STREAK_THRESHOLD) {
+    newState = "parking";
+    stateEl.textContent = "PARKING (P)";
+    stateEl.className = "status-pill st-parking";
+  } else {
+    newState = "idle";
+    stateEl.textContent = "NEUTRE";
+    stateEl.className = "status-pill st-idle";
+  }
+
+  desiredState = newState;
+
+  // Sortie du mode Parking : on force le son de demarrage moteur, quelle que
+  // soit la variation detectee a cet instant precis (meme si un pic de
+  // variation classerait a tort ce moment en ACCEL ou FREIN). On ne peut pas
+  // demarrer directement sur un son d'acceleration ou de freinage : le moteur
+  // doit d'abord "s'allumer".
+  const exitingParking = (previousState === "parking" && newState !== "parking");
+  previousState = newState;
+
+  if (lockedPlayback) {
+    // Le comportement (interruptible ou non) depend maintenant du reglage
+    // choisi par l'utilisateur pour ce son, dans l'onglet Reglages.
+    const cfg = soundSettings[lockedPlayback];
+    const canBeInterrupted = cfg ? cfg.interruptible : false;
+
+    const isOppositeEvent = canBeInterrupted && (
+      (lockedPlayback === "accel" && newState === "brake") ||
+      (lockedPlayback === "brake" && newState === "accel") ||
+      (lockedPlayback === "startup" && (newState === "accel" || newState === "brake"))
+    );
+
+    if (isOppositeEvent) {
+      log(`Evenement oppose detecte pendant "${lockedPlayback}" -> interruption immediate vers "${newState}"`);
+      lockedPlayback = null;
+      applyState(newState);
+    }
+    return;
+  }
+
+  if (exitingParking) {
+    log(`Sortie du mode Parking (etat reel detecte : ${newState}) -> lecture forcee du son de demarrage moteur`);
+    triggerEventSound("startup");
+    return;
+  }
+
+  applyState(desiredState);
+}
+
+document.getElementById("btnConnect").addEventListener("click", async () => {
+  try {
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+    log(`AudioContext state apres resume() = ${audioCtx.state}`);
+
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [SERVICE_UUID] }],
+      optionalServices: [SERVICE_UUID]
+    });
+
+    document.getElementById("bleState").textContent = "Connexion...";
+    log(`Appareil selectionne : ${device.name}`);
+
+    server = await device.gatt.connect();
+    log("GATT connecte");
+
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    log("Service FFE0 trouve");
+
+    const allChars = await service.getCharacteristics();
+    log(`Caracteristiques trouvees sous FFE0 : ${allChars.map(c => c.uuid).join(", ")}`);
+
+    characteristic = await service.getCharacteristic(CHAR_UUID);
+    log("Caracteristique FFE1 trouvee, abonnement en cours...");
+
+    await characteristic.startNotifications();
+    log("Notifications activees - en attente de donnees...");
+
+    characteristic.addEventListener("characteristicvaluechanged", (event) => {
+      const data = event.target.value;
+      const bytes = [];
+      for (let i = 0; i < data.byteLength; i++) {
+        bytes.push(data.getUint8(i).toString(16).padStart(2, "0"));
+      }
+      log(`RECU (${data.byteLength} octets) : ${bytes.join(" ")}`);
+
+      if (data.byteLength !== 20 || data.getUint8(0) !== 0x04) {
+        log("-> ignore : pas un paquet de donnees exploitable (attendu 20 octets, debut 04)");
+        return;
+      }
+
+      const value = data.getInt16(14, false);
+
+      if (lastValue !== null) {
+        const rawDelta = value - lastValue;
+        smoothedDelta = SMOOTHING_ALPHA * rawDelta + (1 - SMOOTHING_ALPHA) * smoothedDelta;
+        log(`-> valeur = ${value}, delta brut = ${rawDelta}, delta lisse = ${smoothedDelta.toFixed(0)}`);
+        updateSoundState(value, smoothedDelta);
+      } else {
+        log(`-> premiere valeur recue = ${value} (pas encore de delta)`);
+      }
+      lastValue = value;
+    });
+
+    document.getElementById("bleState").textContent = "Connecte : " + device.name;
+    document.getElementById("connDot").classList.add("on");
+
+    const connectBtn = document.getElementById("btnConnect");
+    connectBtn.textContent = "Connecte a " + device.name;
+    connectBtn.classList.add("connected");
+
+    device.addEventListener("gattserverdisconnected", () => {
+      document.getElementById("bleState").textContent = "Deconnecte";
+      document.getElementById("connDot").classList.remove("on");
+      connectBtn.textContent = "Connecter la roue";
+      connectBtn.classList.remove("connected");
+      log("Deconnecte de la roue");
+    });
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("bleState").textContent = "Erreur : " + err.message;
+    log(`ERREUR : ${err.message}`);
+  }
+});
+
+// ---------------- Initialisation : restaurer les reglages sauvegardes ----------------
+restoreThreshold();
+restoreSoundSettings();
+restoreModulationSettings();
+restoreSavedSounds();
+
+// ---------------- Enregistrement du service worker (mode PWA / hors-ligne) ----------------
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch((err) => {
+      console.warn("Service worker non enregistre :", err.message);
+    });
+  });
+}
+</script>
+
+</body>
+</html>
