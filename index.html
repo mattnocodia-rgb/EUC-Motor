@@ -826,17 +826,10 @@
       </div>
 
       <div class="card">
-        <p class="card-title">Realisme sonore</p>
-        <p class="hint" style="margin-bottom:10px;"><strong>Sans ce reglage :</strong> le son d'acceleration ou de freinage sort toujours pareil, que tu donnes un petit coup ou un gros coup — comme un bouton "marche/arret".</p>
-        <p class="hint" style="margin-bottom:14px;"><strong>Avec ce reglage :</strong> le son s'adapte a la force reelle de ton geste, en direct — plus tu appuies fort, plus il est fort (et si tu actives la 2e case, plus il devient aigu aussi, comme un moteur qui monte en regime).</p>
-        <label class="checkbox-row"><input type="checkbox" id="modVolume"> Le volume s'adapte a la force du geste (recommande)</label>
-        <label class="checkbox-row"><input type="checkbox" id="modPitch"> Le son devient aussi plus aigu si le geste est franc (effet plus marque, a tester)</label>
-        <div class="row" style="margin-top:8px;">
-          <span>Demonstration en direct</span>
-          <span class="mono" id="modLiveReadout">-</span>
-        </div>
-        <p class="hint">Cette ligne s'affiche uniquement pendant qu'un son d'acceleration ou de freinage joue : elle montre les valeurs appliquees a l'instant T, pour verifier concretement que le reglage fonctionne.</p>
-        <p class="hint">Ces reglages sont sauvegardes automatiquement.</p>
+        <p class="card-title">Son synthetique evolutif</p>
+        <p class="hint" style="margin-bottom:10px;">Ajoute un son electronique evolutif par-dessus le son choisi, dont la tonalite monte avec l'intensite reelle de l'acceleration ou du freinage — un peu comme le systeme sonore integre de certaines roues (Inmotion V12 par exemple), qui n'est pas un bruit de moteur mais un son synthetique qui reagit en direct.</p>
+        <label class="checkbox-row"><input type="checkbox" id="synthToneEnabled"> Activer le son synthetique evolutif</label>
+        <p class="hint">Ce reglage est sauvegarde automatiquement.</p>
       </div>
 
       <div class="card">
@@ -1626,84 +1619,91 @@ let zeroStreak = 0;
 const PARKING_STREAK_THRESHOLD = 5;
 let previousState = "idle"; // pour detecter la transition parking -> neutre
 
-// ---------------- Modulation en temps reel (realisme sonore) ----------------
-// Plus l'acceleration/le freinage est franc, plus le son est fort (volume) et,
-// si active, plus aigu (hauteur/pitch) — comme un moteur qui repond a l'effort.
-const modulationSettings = { volume: true, pitch: false };
+// ---------------- Son synthetique evolutif (façon Inmotion V12) ----------------
+// Contrairement au reglage de "realisme sonore" abandonne, ceci ne modifie pas
+// le fichier audio choisi : ca ajoute un oscillateur synthetique separe,
+// dont la frequence et le volume evoluent en direct avec l'intensite reelle
+// de l'acceleration ou du freinage (delta brut, non lisse).
+const synthToneSettings = { enabled: false };
+let synthOscillator = null;
+let synthGainNode = null;
 
-function saveModulationSettings() {
-  try { localStorage.setItem("nosfet_aeon_modulation", JSON.stringify(modulationSettings)); } catch (e) {}
+function saveSynthToneSettings() {
+  try { localStorage.setItem("nosfet_aeon_synth_tone", JSON.stringify(synthToneSettings)); } catch (e) {}
 }
 
-function restoreModulationSettings() {
+function restoreSynthToneSettings() {
   try {
-    const saved = localStorage.getItem("nosfet_aeon_modulation");
-    if (saved) Object.assign(modulationSettings, JSON.parse(saved));
+    const saved = localStorage.getItem("nosfet_aeon_synth_tone");
+    if (saved) Object.assign(synthToneSettings, JSON.parse(saved));
   } catch (e) {}
-  document.getElementById("modVolume").checked = modulationSettings.volume;
-  document.getElementById("modPitch").checked = modulationSettings.pitch;
+  document.getElementById("synthToneEnabled").checked = synthToneSettings.enabled;
 }
 
-document.getElementById("modVolume").addEventListener("change", (e) => {
-  modulationSettings.volume = e.target.checked;
-  saveModulationSettings();
-});
-document.getElementById("modPitch").addEventListener("change", (e) => {
-  modulationSettings.pitch = e.target.checked;
-  saveModulationSettings();
+document.getElementById("synthToneEnabled").addEventListener("change", (e) => {
+  synthToneSettings.enabled = e.target.checked;
+  saveSynthToneSettings();
+  if (!synthToneSettings.enabled) stopSynthTone();
 });
 
-function updateRealtimeModulation(delta) {
-  const liveEl = document.getElementById("modLiveReadout");
+function ensureSynthStarted() {
+  if (synthOscillator) return;
+  synthOscillator = audioCtx.createOscillator();
+  synthOscillator.type = "sawtooth";
+  synthOscillator.frequency.value = 140;
+  synthGainNode = audioCtx.createGain();
+  synthGainNode.gain.value = 0;
+  synthOscillator.connect(synthGainNode);
+  synthGainNode.connect(masterGain);
+  synthOscillator.start();
+}
 
-  if (!currentGainNode || !currentSource || (currentPlaying !== "accel" && currentPlaying !== "brake")) {
-    if (liveEl) liveEl.textContent = "-";
+function stopSynthTone() {
+  if (!synthOscillator) return;
+  const now = audioCtx.currentTime;
+  const osc = synthOscillator;
+  const gain = synthGainNode;
+  gain.gain.cancelScheduledValues(now);
+  gain.gain.setValueAtTime(gain.gain.value, now);
+  gain.gain.linearRampToValueAtTime(0, now + 0.12);
+  setTimeout(() => { try { osc.stop(); } catch (e) {} }, 160);
+  synthOscillator = null;
+  synthGainNode = null;
+}
+
+function updateSynthTone(state, rawDelta) {
+  if (!synthToneSettings.enabled) {
+    if (synthOscillator) stopSynthTone();
     return;
   }
 
-  // Intensite calculee relativement au seuil configure pour l'action en cours
-  // (pas sur une echelle fixe) : 0 juste au-dessus du seuil, 1 des que la
-  // variation atteint 1.5x le seuil. Plage volontairement resserree pour que
-  // l'intensite maximale soit atteignable en usage reel (et pas seulement en
-  // theorie), separement pour l'acceleration et le freinage.
-  const relevantThreshold = currentPlaying === "accel" ? thresholdAccel : thresholdBrake;
+  if (state !== "accel" && state !== "brake") {
+    if (synthOscillator) stopSynthTone();
+    return;
+  }
+
+  const relevantThreshold = state === "accel" ? thresholdAccel : thresholdBrake;
   const range = Math.max(relevantThreshold * 1.5, 40);
-  const intensity = Math.max(0, Math.min(1, (Math.abs(delta) - relevantThreshold) / range));
+  const intensity = Math.max(0, Math.min(1, (Math.abs(rawDelta) - relevantThreshold) / range));
 
-  const baseVolume = soundVolumes[currentPlaying] !== undefined ? soundVolumes[currentPlaying] : 1;
-  let gainPct = 100;
-  let pitchPct = 100;
+  ensureSynthStarted();
+  const now = audioCtx.currentTime;
 
-  if (modulationSettings.volume) {
-    // Plage elargie (30% a 100%) pour une difference clairement audible,
-    // au lieu d'un ecart trop subtil entre les deux bouts de la plage.
-    const gain = (0.3 + 0.7 * intensity) * baseVolume;
-    currentGainNode.gain.value = gain;
-    gainPct = Math.round(gain * 100);
-  } else {
-    currentGainNode.gain.value = baseVolume;
-    gainPct = Math.round(baseVolume * 100);
-  }
+  // Acceleration : tonalite qui monte (comme une turbine qui accelere).
+  // Freinage : tonalite qui part plus haut et redescend (effet de decelaration).
+  const baseFreq = state === "accel" ? 130 : 260;
+  const freqSwing = state === "accel" ? 480 : -160;
+  const targetFreq = baseFreq + freqSwing * intensity;
+  synthOscillator.frequency.setTargetAtTime(targetFreq, now, 0.05);
 
-  if (modulationSettings.pitch) {
-    const rate = 0.85 + 0.3 * intensity;
-    currentSource.playbackRate.value = rate;
-    pitchPct = Math.round(rate * 100);
-  } else {
-    currentSource.playbackRate.value = 1;
-  }
-
-  if (liveEl) liveEl.textContent = `Volume ${gainPct}% · Hauteur ${pitchPct}%`;
+  const targetGain = 0.1 + 0.25 * intensity;
+  synthGainNode.gain.setTargetAtTime(targetGain, now, 0.05);
 }
 
 function updateSoundState(value, delta, rawDeltaForModulation) {
   document.getElementById("rawCurrent").textContent = value;
   document.getElementById("rawDelta").textContent = delta.toFixed(0);
   updateGauge(delta);
-  // On utilise le delta BRUT (non lisse) pour la modulation : plus reactif et
-  // plus fidele a l'intensite reelle et instantanee du geste, alors que le
-  // delta lisse reste utilise pour la logique d'etat (evite les a-coups).
-  updateRealtimeModulation(rawDeltaForModulation !== undefined ? rawDeltaForModulation : delta);
   lastDelta = delta;
 
   if (value === 0) {
@@ -1734,6 +1734,7 @@ function updateSoundState(value, delta, rawDeltaForModulation) {
   }
 
   desiredState = newState;
+  updateSynthTone(newState, rawDeltaForModulation !== undefined ? rawDeltaForModulation : delta);
 
   // Sortie du mode Parking : on force le son de demarrage moteur, quelle que
   // soit la variation detectee a cet instant precis (meme si un pic de
@@ -1854,7 +1855,7 @@ restoreCrossfade();
 restoreIdleMuteSettings();
 restoreSoundVolumes();
 restoreSoundSettings();
-restoreModulationSettings();
+restoreSynthToneSettings();
 restoreSavedSounds();
 
 // ---------------- Bouton du bandeau d'installation (reutilise la logique commune) ----------------
