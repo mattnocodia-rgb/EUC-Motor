@@ -339,27 +339,48 @@
   .file-input-wrap {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
-  input[type="file"] {
+  .hidden-file-input {
+    position: absolute;
+    width: 1px; height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .file-choose-btn {
     flex: 1;
-    font-size: 12.5px;
-    color: var(--text-dim);
-    padding: 8px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-  }
-  input[type="file"]::file-selector-button {
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 12px;
-    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 16px;
+    border-radius: 12px;
+    background: rgba(0,229,255,0.1);
+    border: 1px solid rgba(0,229,255,0.35);
+    color: var(--accent-cyan);
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
+    transition: background 0.15s;
   }
+  .file-choose-btn:active { background: rgba(0,229,255,0.18); }
+  .remove-x-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: rgba(255,90,78,0.12);
+    border: 1px solid rgba(255,90,78,0.35);
+    color: var(--brake);
+    font-size: 18px;
+    line-height: 1;
+    padding: 0;
+  }
+  .remove-x-btn.show { display: flex; }
   .file-status {
     font-size: 11.5px;
     color: var(--text-faint);
@@ -631,8 +652,9 @@
           <div class="sound-head"><span class="sound-dot parking"></span><span class="sound-name">Parking (P)</span></div>
           <p class="sound-desc">Joue en boucle quand la roue est allumee mais garee, moteur coupe.</p>
           <div class="file-input-wrap">
-            <input type="file" id="fileParking" accept="audio/*">
-            <button class="btn-danger btn-small" id="clearParking">Retirer</button>
+            <label class="file-choose-btn" for="fileParking">🎵 Choisir un fichier</label>
+            <input type="file" id="fileParking" accept="audio/*" class="hidden-file-input">
+            <button class="remove-x-btn" id="clearParking" title="Retirer">×</button>
           </div>
           <div class="file-status" id="statusParking">Aucun fichier choisi</div>
         </div>
@@ -641,8 +663,9 @@
           <div class="sound-head"><span class="sound-dot startup"></span><span class="sound-name">Demarrage moteur</span></div>
           <p class="sound-desc">Se joue une fois, integralement et sans interruption, quand tu sors du mode Parking : simule l'allumage du moteur avant de repasser en Neutre.</p>
           <div class="file-input-wrap">
-            <input type="file" id="fileStartup" accept="audio/*">
-            <button class="btn-danger btn-small" id="clearStartup">Retirer</button>
+            <label class="file-choose-btn" for="fileStartup">🎵 Choisir un fichier</label>
+            <input type="file" id="fileStartup" accept="audio/*" class="hidden-file-input">
+            <button class="remove-x-btn" id="clearStartup" title="Retirer">×</button>
           </div>
           <div class="file-status" id="statusStartup">Aucun fichier choisi</div>
         </div>
@@ -651,8 +674,9 @@
           <div class="sound-head"><span class="sound-dot idle"></span><span class="sound-name">Neutre</span></div>
           <p class="sound-desc">Joue en boucle quand la roue est allumee et equilibree, sans que tu accelerer ni freines.</p>
           <div class="file-input-wrap">
-            <input type="file" id="fileIdle" accept="audio/*">
-            <button class="btn-danger btn-small" id="clearIdle">Retirer</button>
+            <label class="file-choose-btn" for="fileIdle">🎵 Choisir un fichier</label>
+            <input type="file" id="fileIdle" accept="audio/*" class="hidden-file-input">
+            <button class="remove-x-btn" id="clearIdle" title="Retirer">×</button>
           </div>
           <div class="file-status" id="statusIdle">Aucun fichier choisi</div>
         </div>
@@ -661,8 +685,9 @@
           <div class="sound-head"><span class="sound-dot accel"></span><span class="sound-name">Acceleration</span></div>
           <p class="sound-desc">Se joue une fois en entier des que tu accelerer, meme si tu relaches avant la fin.</p>
           <div class="file-input-wrap">
-            <input type="file" id="fileAccel" accept="audio/*">
-            <button class="btn-danger btn-small" id="clearAccel">Retirer</button>
+            <label class="file-choose-btn" for="fileAccel">🎵 Choisir un fichier</label>
+            <input type="file" id="fileAccel" accept="audio/*" class="hidden-file-input">
+            <button class="remove-x-btn" id="clearAccel" title="Retirer">×</button>
           </div>
           <div class="file-status" id="statusAccel">Aucun fichier choisi</div>
         </div>
@@ -671,8 +696,9 @@
           <div class="sound-head"><span class="sound-dot brake"></span><span class="sound-name">Freinage</span></div>
           <p class="sound-desc">Se joue une fois en entier des que tu freines ou que tu recules.</p>
           <div class="file-input-wrap">
-            <input type="file" id="fileBrake" accept="audio/*">
-            <button class="btn-danger btn-small" id="clearBrake">Retirer</button>
+            <label class="file-choose-btn" for="fileBrake">🎵 Choisir un fichier</label>
+            <input type="file" id="fileBrake" accept="audio/*" class="hidden-file-input">
+            <button class="remove-x-btn" id="clearBrake" title="Retirer">×</button>
           </div>
           <div class="file-status" id="statusBrake">Aucun fichier choisi</div>
         </div>
@@ -1127,11 +1153,14 @@ setupSoundSettingControls("accel");
 setupSoundSettingControls("brake");
 
 const statusLabels = { idle: "statusIdle", accel: "statusAccel", brake: "statusBrake", parking: "statusParking", startup: "statusStartup" };
+const clearButtonLabels = { idle: "clearIdle", accel: "clearAccel", brake: "clearBrake", parking: "clearParking", startup: "clearStartup" };
 
 function setStatus(key, text, loaded) {
   const el = document.getElementById(statusLabels[key]);
   el.textContent = text;
   el.classList.toggle("loaded", !!loaded);
+  const clearBtn = document.getElementById(clearButtonLabels[key]);
+  if (clearBtn) clearBtn.classList.toggle("show", !!loaded);
 }
 
 async function loadFile(inputId, key) {
